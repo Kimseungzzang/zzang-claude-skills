@@ -15,6 +15,8 @@ npx zzang-claude-skills
 | `/obsidian` | 오늘 대화를 요약해서 Obsidian vault에 저장 |
 | `/github-summary` | GitHub URL을 받아 저장소 내용을 한국어로 요약 |
 | `/codex-review-loop` | 개발 완료 후 Codex CLI로 코드 리뷰 → 이슈 수정 → 클린할 때까지 반복 (최대 3회) |
+| `/session-save` | 현재 세션 컨텍스트를 ultra-compact 포맷으로 압축해 git에 저장 (프로젝트별 누적) |
+| `/session-load` | 저장된 세션 컨텍스트를 불러와 대화 이어서 시작 |
 
 ## 스킬 추가 방법
 
@@ -25,7 +27,18 @@ skills/
 ├── obsidian.md
 ├── github-summary.md
 ├── codex-review-loop.md
+├── session-save.md
+├── session-load.md
 └── 새스킬.md   ← 여기에 추가
+```
+
+### session-save / session-load 초기 세팅 (최초 1회)
+
+```bash
+git init ~/.claude/sessions
+cd ~/.claude/sessions
+gh repo create claude-sessions --private --source=. --push
+git push -u origin main
 ```
 
 ## 개발
