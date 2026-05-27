@@ -72,27 +72,40 @@ Run /session-save at the end of a session to start accumulating context.
 ```
 Stop here.
 
-## Step 4 — Acknowledge and orient
+## Step 4 — Read task-log (if exists)
 
-After reading CURRENT.ctx, output a brief acknowledgment. Do NOT reprint the raw file.
+```bash
+cat ~/.claude/zzang-ctx/$PROJECT/task-log.md 2>/dev/null
+```
+
+If task-log exists, it shows the exact sequence of tool uses from the last task — use this to determine where work was interrupted.
+
+## Step 5 — Acknowledge and orient
+
+After reading both CURRENT.ctx and task-log, output a brief acknowledgment. Do NOT reprint raw files.
 
 ```
 📂 Context loaded for {project} (last saved: {SESSION timestamp})
 
-Continuing: {1-sentence summary of current state and what's in progress}
+Continuing: {1-sentence summary of current state}
 
 Key context:
 • {CTX fact}
 • {CTX fact}
-…
 
 Pending TODOs: {TODO items}
 Open questions: {OPEN items, if any}
-
-Ready. What would you like to work on?
 ```
 
-Keep this under 120 words. Orient fast, don't repeat everything.
+If task-log exists and shows an interrupted task, append:
+
+```
+⚠️  Last task was interrupted at {HH:MM}:
+  Last action: {tool} {detail}
+  Resume from here? (or describe what to do next)
+```
+
+Keep total output under 150 words.
 
 ## Step 5 — Optional: history
 
