@@ -143,19 +143,23 @@ Update `~/.claude/zzang-ctx/{project}/CURRENT.ctx` using these rules:
 
 Keep CURRENT.ctx under ~300 tokens (raised from 200 to accommodate TRIED and DECIDED detail). If it grows beyond that, compress DONE/CHANGED history but never compress TRIED or DECIDED — those are the most valuable for continuity.
 
-## Step 7 — Commit and push all at once
+## Step 7 — Clear task-log
 
-Push everything: CURRENT.ctx snapshots + task-log (accumulated local commits from PostToolUse hook).
+After absorbing task-log into CURRENT.ctx, delete it. Next task will start a fresh log.
+
+```bash
+rm ~/.claude/zzang-ctx/{project}/task-log.md 2>/dev/null || true
+```
+
+## Step 8 — Commit and push
 
 ```bash
 git -C ~/.claude/zzang-ctx add .
-git -C ~/.claude/zzang-ctx commit -m "session: {project-list} $(date '+%Y-%m-%dT%H:%M')" 2>/dev/null || true
+git -C ~/.claude/zzang-ctx commit -m "session: {project-list} $(date '+%Y-%m-%dT%H:%M')"
 git -C ~/.claude/zzang-ctx push
 ```
 
-The `|| true` handles the case where PostToolUse already committed everything and there's nothing new to commit — push still runs to send pending commits.
-
-## Step 8 — Report
+## Step 9 — Report
 
 ```
 ✅ Session saved for {N} project(s):
