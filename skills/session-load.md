@@ -84,17 +84,27 @@ SAVED_ID=$(grep "^TASK-LOG-ID:" ~/.claude/zzang-ctx/$PROJECT/CURRENT.ctx | awk '
 LAST_LOG=$(tail -1 ~/.claude/zzang-ctx/$PROJECT/task-log.md 2>/dev/null | grep -o '^\[[0-9:]*\]' | tr -d '[]')
 ```
 
-**Case 1 — task-log exists, last line matches SAVED_ID**: nothing new since last save. No interrupted work.
+**Case 1 — last line matches SAVED_ID**: nothing new since last save. No interrupted work. Proceed normally.
 
-**Case 2 — task-log exists, last line is newer than SAVED_ID**: new tool uses happened after the last `/session-save`. Show the entries after SAVED_ID — these are the interrupted work:
+**Case 2 — last line is newer than SAVED_ID**: unsaved work exists. Extract lines after SAVED_ID — these are tool uses that happened after the last `/session-save` and were not absorbed into CURRENT.ctx.
 
-```bash
-cat ~/.claude/zzang-ctx/$PROJECT/task-log.md
+Action:
+- Show the unsaved entries clearly
+- Treat them as the most recent work context (more recent than CURRENT.ctx DONE/CHANGED)
+- Ask the user whether to resume from the interrupted point or start fresh:
+
+```
+⚠️  Unsaved work detected since last /session-save ({SAVED_ID} → {LAST_LOG}):
+
+  [14:33] Write   src/user.py
+  [14:35] Bash    npm test   ← last action before interruption
+
+Resume from here, or describe what to do next.
 ```
 
-Highlight which lines are new (after the saved timestamp).
+**Case 3 — task-log header is newer than CURRENT.ctx SESSION timestamp**: a completely new task started and is in progress (not interrupted from the previous session). The previous session was already absorbed. Show the current task-log as ongoing work context.
 
-**Case 3 — No local task-log**: different machine. task-log was absorbed into CURRENT.ctx at last `/session-save`. Inform the user:
+**Case 4 — No local task-log**: different machine. Inform the user:
 
 ```
 ℹ️  task-log not available on this machine (local only).
