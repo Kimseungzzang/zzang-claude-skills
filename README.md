@@ -1,28 +1,40 @@
 # zzang-claude-skills
 
-kimseungzzang의 Claude Code 커스텀 스킬 모음
+A collection of custom Claude Code skills by kimseungzzang.
 
-## 설치
+## Install
 
 ```bash
 npx zzang-claude-skills
 ```
 
-스킬 설치 후 `/session-save`, `/session-load` 사용을 위한 sessions repo를 대화형으로 설정한다.
+The installer will set up all skills and interactively configure a sessions repo for `/session-save` and `/session-load`.
 
-## 포함된 스킬
+## Skills
 
-| 스킬 | 설명 |
-|------|------|
-| `/obsidian` | 오늘 대화를 요약해서 Obsidian vault에 저장 |
-| `/github-summary` | GitHub URL을 받아 저장소 내용을 한국어로 요약 |
-| `/codex-review-loop` | 개발 완료 후 Codex CLI로 코드 리뷰 → 이슈 수정 → 클린할 때까지 반복 (최대 3회) |
-| `/session-save` | 현재 세션 컨텍스트를 ultra-compact 포맷으로 압축해 git에 저장 (프로젝트별 누적) |
-| `/session-load` | 저장된 세션 컨텍스트를 불러와 대화 이어서 시작 |
+| Skill | Description |
+|-------|-------------|
+| `/obsidian` | Summarize today's conversation and save it to your Obsidian vault |
+| `/github-summary` | Fetch a GitHub repo URL and summarize it in Korean |
+| `/codex-review-loop` | Run a Codex CLI code review after finishing a task, fix issues, and repeat until clean (max 3 iterations) |
+| `/session-save` | Compact the current session context into an ultra-dense format and push to your sessions repo (accumulated per project) |
+| `/session-load` | Pull the latest context from your sessions repo and resume where you left off |
 
-## 스킬 추가 방법
+## Session persistence
 
-`skills/` 폴더에 `.md` 파일 추가 후 npm 배포하면 자동으로 설치됨.
+`/session-save` and `/session-load` require a private git repo to store context across sessions and machines.
+
+The installer will walk you through it. If you skip it during install, run again anytime:
+
+```bash
+npx zzang-claude-skills
+```
+
+On a new machine, just install the skills — `/session-load` will automatically clone your sessions repo.
+
+## Adding a skill
+
+Add a `.md` file to `skills/` and publish to npm — it gets installed automatically.
 
 ```
 skills/
@@ -31,13 +43,11 @@ skills/
 ├── codex-review-loop.md
 ├── session-save.md
 ├── session-load.md
-└── 새스킬.md   ← 여기에 추가
+└── your-skill.md   ← add here
 ```
 
-
-## 개발
+## Development
 
 ```bash
-# 로컬에서 직접 실행 테스트
 node bin/install.js
 ```
