@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const readline = require('readline');
+const { execSync } = require('child_process');
 
 const SKILLS_DIR = path.join(os.homedir(), '.claude', 'commands');
 const SOURCE_DIR = path.join(__dirname, '..', 'skills');
@@ -13,6 +14,39 @@ fs.mkdirSync(SKILLS_DIR, { recursive: true });
 
 function ask(rl, question) {
   return new Promise(resolve => rl.question(question, resolve));
+}
+
+function repoExistsOnGitHub(url) {
+  // Extract owner/repo from URL
+  // Supports: https://github.com/owner/repo.git or https://github.com/owner/repo
+  const match = url.match(/github\.com[/:]([\w.-]+)\/([\w.-]+?)(\.git)?$/);
+  if (!match) return { ok: false, error: 'Could not parse GitHub URL.' };
+
+  const slug = `${match[1]}/${match[2]}`;
+  try {
+    execSync(`gh repo view ${slug} --json name`, { stdio: 'pipe' });
+    return { ok: true };
+  } catch {
+    return { ok: false, error: `Repo not found: github.com/${slug}` };
+  }
+}
+
+async function promptRepoUrl(rl, label) {
+  while (true) {
+    const url = await ask(rl, `   ${label}: `);
+    if (!url.trim()) return null;
+
+    process.stdout.write('   Checking repo... ');
+    const result = repoExistsOnGitHub(url.trim());
+    if (result.ok) {
+      console.log('✅ found');
+      return url.trim();
+    } else {
+      console.log(`❌ ${result.error}`);
+      const retry = await ask(rl, '   Try a different URL? (Y/n) ');
+      if (retry.toLowerCase() === 'n') return null;
+    }
+  }
 }
 
 async function setupSessionsRepo(rl) {
@@ -46,15 +80,30 @@ async function setupSessionsRepo(rl) {
     await ask(rl, '   Press enter when done...');
     const username = await ask(rl, '   Your GitHub username: ');
     const url = `https://github.com/${username.trim()}/${name}.git`;
-    fs.writeFileSync(SESSIONS_REMOTE_FILE, url);
-    console.log(`\n   ✅ Saved: ${url}`);
-  } else {
-    const url = await ask(rl, '   Paste your repo URL: ');
-    if (url.trim()) {
-      fs.writeFileSync(SESSIONS_REMOTE_FILE, url.trim());
-      console.log(`\n   ✅ Saved: ${url.trim()}`);
+
+    process.stdout.write('   Checking repo... ');
+    const result = repoExistsOnGitHub(url);
+    if (result.ok) {
+      console.log('✅ found');
+      fs.writeFileSync(SESSIONS_REMOTE_FILE, url);
+      console.log(`\n   ✅ Saved: ${url}`);
     } else {
-      console.log('   No URL entered, skipped.');
+      console.log(`❌ ${result.error}`);
+      const fallback = await promptRepoUrl(rl, 'Paste the correct repo URL (or enter to skip)');
+      if (fallback) {
+        fs.writeFileSync(SESSIONS_REMOTE_FILE, fallback);
+        console.log(`\n   ✅ Saved: ${fallback}`);
+      } else {
+        console.log('   Skipped. Run `npx zzang-claude-skills` again to configure.');
+      }
+    }
+  } else {
+    const url = await promptRepoUrl(rl, 'Paste your repo URL (or enter to skip)');
+    if (url) {
+      fs.writeFileSync(SESSIONS_REMOTE_FILE, url);
+      console.log(`\n   ✅ Saved: ${url}`);
+    } else {
+      console.log('   Skipped. Run `npx zzang-claude-skills` again to configure.');
     }
   }
 }
