@@ -80,13 +80,21 @@ Save context for all of them? (Y/n) or enter numbers to select (e.g. 1,2)
 
 Proceed with the confirmed project list.
 
-## Step 4 — For each project: read existing CURRENT.ctx
+## Step 4 — For each project: read task-log and existing CURRENT.ctx
+
+Read task-log first (local only — contains every tool use since last session start):
+
+```bash
+cat ~/.claude/zzang-ctx/{project}/task-log.md 2>/dev/null
+```
+
+Use task-log to accurately populate DONE and CHANGED fields in the snapshot. This ensures cross-machine accuracy — task-log is local only and will not exist on other machines, so its contents must be absorbed into CURRENT.ctx now.
+
+Then read existing CURRENT.ctx to load accumulated history:
 
 ```bash
 cat ~/.claude/zzang-ctx/{project}/CURRENT.ctx 2>/dev/null
 ```
-
-Load any existing accumulated context for that project before writing new content.
 
 ## Step 5 — For each project: write a filtered snapshot
 

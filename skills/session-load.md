@@ -76,15 +76,24 @@ Stop here.
 
 ## Step 4 — Read task-log (if exists)
 
+task-log is local only — it exists on the machine where the work was done, not on other machines.
+
 ```bash
 cat ~/.claude/zzang-ctx/$PROJECT/task-log.md 2>/dev/null
 ```
 
-If task-log exists, it shows the exact sequence of tool uses from the last task — use this to determine where work was interrupted.
+**If task-log exists** (same machine): shows exact tool-use sequence up to the interruption point. Use this to determine precisely where work stopped.
+
+**If task-log does not exist** (different machine): task-log was local to another machine. Its contents were absorbed into CURRENT.ctx at the last `/session-save`. Use CURRENT.ctx's DONE and CHANGED fields as the best available picture of what was completed. Inform the user:
+
+```
+ℹ️  task-log is not available on this machine.
+    Resuming from last /session-save state in CURRENT.ctx.
+```
 
 ## Step 5 — Acknowledge and orient
 
-After reading both CURRENT.ctx and task-log, output a brief acknowledgment. Do NOT reprint raw files.
+After reading CURRENT.ctx and task-log (if available), output a brief acknowledgment. Do NOT reprint raw files.
 
 ```
 📂 Context loaded for {project} (last saved: {SESSION timestamp})
@@ -106,6 +115,8 @@ If task-log exists and shows an interrupted task, append:
   Last action: {tool} {detail}
   Resume from here? (or describe what to do next)
 ```
+
+If task-log does not exist, append the ℹ️ note above instead.
 
 Keep total output under 150 words.
 
