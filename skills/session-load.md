@@ -74,33 +74,31 @@ Run /session-save at the end of a session to start accumulating context.
 ```
 Stop here.
 
-## Step 4 — Compare task-log ID to determine state
-
-Extract IDs:
+## Step 4 — Compare task-log to determine state
 
 ```bash
-# ID stored in CURRENT.ctx
+# Timestamp of last absorbed entry (stored in CURRENT.ctx)
 SAVED_ID=$(grep "^TASK-LOG-ID:" ~/.claude/zzang-ctx/$PROJECT/CURRENT.ctx | awk '{print $2}')
 
-# ID in local task-log (first line format: "## timestamp | project | id:XXXX")
-LOCAL_ID=$(head -1 ~/.claude/zzang-ctx/$PROJECT/task-log.md 2>/dev/null | grep -o 'id:[^ ]*' | cut -d: -f2)
+# Timestamp of last line in local task-log
+LAST_LOG=$(tail -1 ~/.claude/zzang-ctx/$PROJECT/task-log.md 2>/dev/null | grep -o '^\[[0-9:]*\]' | tr -d '[]')
 ```
 
-**Case 1 — IDs match** (`LOCAL_ID == SAVED_ID`): same task-log that was last saved. Read the full task-log to see if there are tool uses added after the last `/session-save`:
+**Case 1 — task-log exists, last line matches SAVED_ID**: nothing new since last save. No interrupted work.
+
+**Case 2 — task-log exists, last line is newer than SAVED_ID**: new tool uses happened after the last `/session-save`. Show the entries after SAVED_ID — these are the interrupted work:
 
 ```bash
 cat ~/.claude/zzang-ctx/$PROJECT/task-log.md
 ```
 
-If there are entries after the last save timestamp → interrupted work exists, show it.
+Highlight which lines are new (after the saved timestamp).
 
-**Case 2 — IDs differ** (`LOCAL_ID != SAVED_ID`, both exist): a new task started since last save. The old task-log was absorbed at save time. Show the new task-log as current work in progress.
-
-**Case 3 — No local task-log** (`LOCAL_ID` empty): different machine. task-log existed on another machine and was absorbed into CURRENT.ctx at last `/session-save`. Inform the user:
+**Case 3 — No local task-log**: different machine. task-log was absorbed into CURRENT.ctx at last `/session-save`. Inform the user:
 
 ```
-ℹ️  task-log is not available on this machine (local only).
-    Last absorbed task-log: id:{SAVED_ID}
+ℹ️  task-log not available on this machine (local only).
+    Last absorbed entry: {SAVED_ID}
     Resuming from CURRENT.ctx — DONE and CHANGED reflect the last saved state.
 ```
 

@@ -88,7 +88,9 @@ Read task-log first (local only — contains every tool use since last session s
 cat ~/.claude/zzang-ctx/{project}/task-log.md 2>/dev/null
 ```
 
-Extract the task-log ID from the first line (format: `id:YYYYMMDDTHHMMSS`). Use task-log to accurately populate DONE and CHANGED fields in the snapshot. This ensures cross-machine accuracy — task-log is local only and will not exist on other machines, so its contents must be absorbed into CURRENT.ctx now.
+Use task-log to accurately populate DONE and CHANGED fields in the snapshot. This ensures cross-machine accuracy — task-log is local only and will not exist on other machines, so its contents must be absorbed into CURRENT.ctx now.
+
+Record the timestamp of the **last line** of task-log as `TASK-LOG-ID` in CURRENT.ctx. This marks exactly how far was absorbed, so /session-load can detect any new entries added after this save.
 
 Then read existing CURRENT.ctx to load accumulated history:
 
@@ -129,7 +131,7 @@ Update `~/.claude/zzang-ctx/{project}/CURRENT.ctx` using these rules:
 | Field | Rule |
 |-------|------|
 | `SESSION` | Always update to latest timestamp |
-| `TASK-LOG-ID` | **Replace** with current task-log's ID (from first line of task-log.md) |
+| `TASK-LOG-ID` | **Replace** with timestamp of the last line in task-log.md (e.g. `14:35`) |
 | `STACK` | Union of all stacks seen (deduplicate) |
 | `DONE` | **Replace** with this session's DONE (use task-log to populate accurately) |
 | `CHANGED` | **Replace** with this session's CHANGED (use task-log to populate accurately) |
