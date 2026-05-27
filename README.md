@@ -23,7 +23,7 @@ The installer automatically:
 | Skill | Description |
 |-------|-------------|
 | `/session-save` | Compact the current session context and push to your sessions repo |
-| `/session-load` | Pull the latest context and resume where you left off |
+| `/session-load` | Pull the latest context for the **current project** (detected from git root) and resume where you left off |
 | `/obsidian` | Summarize today's conversation and save it to your Obsidian vault |
 | `/github-summary` | Fetch a GitHub repo URL and summarize it |
 | `/codex-review-loop` | Run Codex CLI review, fix issues, repeat until clean (max 3 iterations) |

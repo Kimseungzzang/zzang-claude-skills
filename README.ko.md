@@ -23,7 +23,7 @@ npx zzang-claude-skills
 | 스킬 | 설명 |
 |------|------|
 | `/session-save` | 현재 세션 컨텍스트를 압축해서 세션 레포에 push |
-| `/session-load` | 최신 컨텍스트를 pull해서 이전 작업을 이어서 진행 |
+| `/session-load` | **현재 프로젝트**(git root 기준)의 최신 컨텍스트를 pull해서 이전 작업을 이어서 진행 |
 | `/obsidian` | 오늘 대화를 요약해서 Obsidian vault에 저장 |
 | `/github-summary` | GitHub 레포 URL을 가져와서 요약 |
 | `/codex-review-loop` | Codex CLI 코드 리뷰 → 수정 → 클린할 때까지 반복 (최대 3회) |
