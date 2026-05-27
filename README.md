@@ -298,9 +298,6 @@ The other machine pulls from GitHub — if you haven't pushed, it sees stale con
 **Use a dedicated repo just for sessions.**
 Don't reuse an existing repo. The sessions repo accumulates CURRENT.ctx files per project over time; a dedicated repo keeps it clean and auditable.
 
-**For long multi-day tasks, prune stale OPEN and TODO items.**
-`/session-save` removes completed TODOs automatically, but open-ended items accumulate. Review and clean them when no longer relevant.
-
 ---
 
 ## Adding a skill
