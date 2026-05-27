@@ -1,0 +1,18 @@
+{
+  "name": "zzang-claude-skills",
+  "version": "1.0.0",
+  "description": "Claude Code custom skills by kimseungzzang",
+  "bin": {
+    "zzang-claude-skills": "bin/install.js"
+  },
+  "files": [
+    "bin/",
+    "skills/"
+  ],
+  "scripts": {
+    "install-skills": "node bin/install.js"
+  },
+  "keywords": ["claude", "claude-code", "skills"],
+  "author": "kimseungzzang",
+  "license": "MIT"
+}
