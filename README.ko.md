@@ -271,9 +271,6 @@ Case 2: LAST_LOG > SAVED_ID            Case 3: task-log 헤더 > SESSION
 **세션 레포는 반드시 private으로.**
 CURRENT.ctx에는 파일 경로, 설계 결정, API 키 이름, 내부 아키텍처 세부사항이 담깁니다. 절대 public 레포를 사용하지 마세요.
 
-**토큰 한계에 도달하기 전에 `/session-save`를 실행하세요.**
-시스템이 컨텍스트를 compaction한 후에는 이미 세부 정보가 사라진 상태입니다. 기능 완성 후, 작업 전환 전 등 자연스러운 시점에 저장하세요.
-
 **`~/.claude/zzang-ctx/`를 수동으로 삭제하지 마세요.**
 `task-log.md`가 여기에 있으며 로컬 전용입니다. `/session-save` 전에 폴더를 지우면 흡수되지 않은 항목이 영구적으로 사라집니다.
 
