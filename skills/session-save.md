@@ -13,7 +13,7 @@ git -C ~/.claude/zzang-ctx rev-parse --git-dir 2>/dev/null
 **If it is NOT a git repo**, check for a saved remote URL:
 
 ```bash
-cat ~/.claude/zzang-zzang-ctx-remote 2>/dev/null
+cat ~/.claude/zzang-ctx-remote 2>/dev/null
 ```
 
 - **URL found** → clone it:
@@ -34,14 +34,14 @@ cat ~/.claude/zzang-zzang-ctx-remote 2>/dev/null
   If option 1: clone the provided URL, then save it:
   ```bash
   git clone {url} ~/.claude/zzang-ctx
-  echo "{url}" > ~/.claude/zzang-zzang-ctx-remote
+  echo "{url}" > ~/.claude/zzang-ctx-remote
   ```
 
   If option 2: guide the user to run:
   ```bash
   gh repo create claude-sessions --private
   git clone https://github.com/{username}/claude-sessions.git ~/.claude/zzang-ctx
-  echo "https://github.com/{username}/claude-sessions.git" > ~/.claude/zzang-zzang-ctx-remote
+  echo "https://github.com/{username}/claude-sessions.git" > ~/.claude/zzang-ctx-remote
   ```
 
 ## Step 2 — Pull latest
