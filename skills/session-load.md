@@ -51,6 +51,8 @@ cat ~/.claude/zzang-ctx-remote 2>/dev/null
 git -C ~/.claude/zzang-ctx pull --rebase 2>/dev/null || true
 ```
 
+Note: pull fetches what was last pushed by `/session-save`. CURRENT.ctx will be up to date. task-log on GitHub may be behind — Step 4 reads the local file directly, which includes all unpushed commits from PostToolUse hooks and is always more current.
+
 ## Step 3 — Find CURRENT.ctx for this project
 
 Detect project name from git root (more reliable than basename of cwd):
@@ -107,7 +109,7 @@ If task-log exists and shows an interrupted task, append:
 
 Keep total output under 150 words.
 
-## Step 5 — Optional: history
+## Step 6 — Optional: history
 
 If the user passes `list` as an argument (e.g. `/session-load list`), show all saved snapshots instead of loading:
 
