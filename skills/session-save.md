@@ -1,24 +1,20 @@
 Compact the current conversation context and merge it into the project's cumulative CURRENT.ctx, then push to remote.
 
-## Step 1 — One-time git setup check
+## Step 1 — Auto-setup sessions repo
+
+Check if ~/.claude/sessions is already a git repo:
 
 ```bash
-git -C ~/.claude/sessions rev-parse --git-dir 2>/dev/null && \
-git -C ~/.claude/sessions remote get-url origin 2>/dev/null
+git -C ~/.claude/sessions rev-parse --git-dir 2>/dev/null
 ```
 
-If NOT a git repo or NO remote, stop and show:
+If it is NOT a git repo, auto-clone from the known remote:
 
+```bash
+git clone https://github.com/Kimseungzzang/claude-sessions.git ~/.claude/sessions
 ```
-⚠️  One-time setup required:
 
-  git init ~/.claude/sessions
-  cd ~/.claude/sessions
-  git remote add origin <your-private-github-repo-url>
-  git push -u origin main
-
-Then run /session-save again.
-```
+If clone fails, stop and report the error.
 
 ## Step 2 — Pull latest
 

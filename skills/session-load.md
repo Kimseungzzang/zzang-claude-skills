@@ -1,12 +1,26 @@
 Restore accumulated project context from CURRENT.ctx for the current project.
 
-## Step 1 — Pull latest from remote
+## Step 1 — Auto-setup sessions repo
+
+Check if ~/.claude/sessions is already a git repo:
+
+```bash
+git -C ~/.claude/sessions rev-parse --git-dir 2>/dev/null
+```
+
+If it is NOT a git repo, auto-clone from the known remote:
+
+```bash
+git clone https://github.com/Kimseungzzang/claude-sessions.git ~/.claude/sessions
+```
+
+If clone fails, stop and report the error.
+
+## Step 2 — Pull latest
 
 ```bash
 git -C ~/.claude/sessions pull --rebase 2>/dev/null || true
 ```
-
-Skip silently if ~/.claude/sessions is not a git repo.
 
 ## Step 2 — Find CURRENT.ctx for this project
 
