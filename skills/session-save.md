@@ -88,7 +88,7 @@ Read task-log first (local only — contains every tool use since last session s
 cat ~/.claude/zzang-ctx/{project}/task-log.md 2>/dev/null
 ```
 
-Use task-log to accurately populate DONE and CHANGED fields in the snapshot. This ensures cross-machine accuracy — task-log is local only and will not exist on other machines, so its contents must be absorbed into CURRENT.ctx now.
+Extract the task-log ID from the first line (format: `id:YYYYMMDDTHHMMSS`). Use task-log to accurately populate DONE and CHANGED fields in the snapshot. This ensures cross-machine accuracy — task-log is local only and will not exist on other machines, so its contents must be absorbed into CURRENT.ctx now.
 
 Then read existing CURRENT.ctx to load accumulated history:
 
@@ -129,9 +129,10 @@ Update `~/.claude/zzang-ctx/{project}/CURRENT.ctx` using these rules:
 | Field | Rule |
 |-------|------|
 | `SESSION` | Always update to latest timestamp |
+| `TASK-LOG-ID` | **Replace** with current task-log's ID (from first line of task-log.md) |
 | `STACK` | Union of all stacks seen (deduplicate) |
-| `DONE` | **Replace** with this session's DONE only |
-| `CHANGED` | **Replace** with this session's CHANGED only |
+| `DONE` | **Replace** with this session's DONE (use task-log to populate accurately) |
+| `CHANGED` | **Replace** with this session's CHANGED (use task-log to populate accurately) |
 | `TRIED` | **Accumulate** — keep all prior failed attempts; they must never be repeated |
 | `DECIDED` | **Accumulate** — append new decisions, keep all prior with reasoning |
 | `TODO` | Remove items that appear in DONE; add new items |

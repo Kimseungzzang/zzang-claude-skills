@@ -74,21 +74,34 @@ Run /session-save at the end of a session to start accumulating context.
 ```
 Stop here.
 
-## Step 4 — Read task-log (if exists)
+## Step 4 — Compare task-log ID to determine state
 
-task-log is local only — it exists on the machine where the work was done, not on other machines.
+Extract IDs:
 
 ```bash
-cat ~/.claude/zzang-ctx/$PROJECT/task-log.md 2>/dev/null
+# ID stored in CURRENT.ctx
+SAVED_ID=$(grep "^TASK-LOG-ID:" ~/.claude/zzang-ctx/$PROJECT/CURRENT.ctx | awk '{print $2}')
+
+# ID in local task-log (first line format: "## timestamp | project | id:XXXX")
+LOCAL_ID=$(head -1 ~/.claude/zzang-ctx/$PROJECT/task-log.md 2>/dev/null | grep -o 'id:[^ ]*' | cut -d: -f2)
 ```
 
-**If task-log exists** (same machine): shows exact tool-use sequence up to the interruption point. Use this to determine precisely where work stopped.
+**Case 1 — IDs match** (`LOCAL_ID == SAVED_ID`): same task-log that was last saved. Read the full task-log to see if there are tool uses added after the last `/session-save`:
 
-**If task-log does not exist** (different machine): task-log was local to another machine. Its contents were absorbed into CURRENT.ctx at the last `/session-save`. Use CURRENT.ctx's DONE and CHANGED fields as the best available picture of what was completed. Inform the user:
+```bash
+cat ~/.claude/zzang-ctx/$PROJECT/task-log.md
+```
+
+If there are entries after the last save timestamp → interrupted work exists, show it.
+
+**Case 2 — IDs differ** (`LOCAL_ID != SAVED_ID`, both exist): a new task started since last save. The old task-log was absorbed at save time. Show the new task-log as current work in progress.
+
+**Case 3 — No local task-log** (`LOCAL_ID` empty): different machine. task-log existed on another machine and was absorbed into CURRENT.ctx at last `/session-save`. Inform the user:
 
 ```
-ℹ️  task-log is not available on this machine.
-    Resuming from last /session-save state in CURRENT.ctx.
+ℹ️  task-log is not available on this machine (local only).
+    Last absorbed task-log: id:{SAVED_ID}
+    Resuming from CURRENT.ctx — DONE and CHANGED reflect the last saved state.
 ```
 
 ## Step 5 — Acknowledge and orient
