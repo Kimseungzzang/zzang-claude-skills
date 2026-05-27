@@ -134,11 +134,15 @@ Keep CURRENT.ctx under ~300 tokens (raised from 200 to accommodate TRIED and DEC
 
 ## Step 7 — Commit and push all at once
 
+Push everything: CURRENT.ctx snapshots + task-log (accumulated local commits from PostToolUse hook).
+
 ```bash
 git -C ~/.claude/zzang-ctx add .
-git -C ~/.claude/zzang-ctx commit -m "session: {project-list} $(date '+%Y-%m-%dT%H:%M')"
+git -C ~/.claude/zzang-ctx commit -m "session: {project-list} $(date '+%Y-%m-%dT%H:%M')" 2>/dev/null || true
 git -C ~/.claude/zzang-ctx push
 ```
+
+The `|| true` handles the case where PostToolUse already committed everything and there's nothing new to commit — push still runs to send pending commits.
 
 ## Step 8 — Report
 
