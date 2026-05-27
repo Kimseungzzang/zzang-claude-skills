@@ -1,5 +1,7 @@
 # zzang-claude-skills
 
+[English](README.md) · [한국어](README.ko.md)
+
 A collection of custom Claude Code skills by kimseungzzang — including a full cross-session, cross-machine context persistence system.
 
 ## Install
@@ -269,9 +271,6 @@ Machine A                          Machine B
 **Keep your sessions repo private.**
 CURRENT.ctx captures file paths, decisions, API key names, and internal architecture details. Never use a public repo.
 
-**Run `/session-save` before you hit the token limit — not after.**
-Once Claude's context is compacted by the system, fine-grained detail is already gone. Save at natural breakpoints (end of a feature, before switching tasks).
-
 **Don't delete `~/.claude/zzang-ctx/` manually.**
 `task-log.md` lives there and is local-only. If you wipe the folder before `/session-save`, unabsorbed entries are gone permanently.
 
@@ -298,12 +297,6 @@ The other machine pulls from GitHub — if you haven't pushed, it sees stale con
 
 **Use a dedicated repo just for sessions.**
 Don't reuse an existing repo. The sessions repo accumulates CURRENT.ctx files per project over time; a dedicated repo keeps it clean and auditable.
-
-**Keep CTX and OPEN entries terse.**
-These fields accumulate indefinitely. Verbose entries bloat CURRENT.ctx and waste tokens on load. One short sentence per fact is enough.
-
-**Add TRIED entries honestly.**
-`TRIED` prevents Claude from re-suggesting approaches that already failed. The more specific the failure reason, the more useful it is: `Redis pub/sub(race condition under concurrent writes)` beats `Redis pub/sub(failed)`.
 
 **For long multi-day tasks, prune stale OPEN and TODO items.**
 `/session-save` removes completed TODOs automatically, but open-ended items accumulate. Review and clean them when no longer relevant.
