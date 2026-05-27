@@ -1,6 +1,6 @@
 Restore accumulated project context from CURRENT.ctx for the current project.
 
-## Step 1 — Auto-setup sessions repo
+## Step 1 — Ensure sessions repo is set up
 
 Check if ~/.claude/sessions is already a git repo:
 
@@ -8,13 +8,42 @@ Check if ~/.claude/sessions is already a git repo:
 git -C ~/.claude/sessions rev-parse --git-dir 2>/dev/null
 ```
 
-If it is NOT a git repo, auto-clone from the known remote:
+**If it IS a git repo** → proceed to Step 2.
+
+**If it is NOT a git repo**, check for a saved remote URL:
 
 ```bash
-git clone https://github.com/Kimseungzzang/claude-sessions.git ~/.claude/sessions
+cat ~/.claude/sessions-remote 2>/dev/null
 ```
 
-If clone fails, stop and report the error.
+- **URL found** → clone it:
+  ```bash
+  git clone {saved_url} ~/.claude/sessions
+  ```
+
+- **No URL found** → ask the user:
+  ```
+  No sessions repo configured. Choose an option:
+
+  1. I have an existing repo URL → paste it and I'll clone it
+  2. Create a new private repo now → I'll guide you through it
+
+  Which option? (1 or 2)
+  ```
+
+  If option 1: clone the provided URL, then save it:
+  ```bash
+  git clone {url} ~/.claude/sessions
+  echo "{url}" > ~/.claude/sessions-remote
+  ```
+
+  If option 2: guide the user to run:
+  ```bash
+  gh repo create claude-sessions --private
+  git clone https://github.com/{username}/claude-sessions.git ~/.claude/sessions
+  echo "https://github.com/{username}/claude-sessions.git" > ~/.claude/sessions-remote
+  ```
+  Then proceed once done.
 
 ## Step 2 — Pull latest
 
@@ -22,7 +51,7 @@ If clone fails, stop and report the error.
 git -C ~/.claude/sessions pull --rebase 2>/dev/null || true
 ```
 
-## Step 2 — Find CURRENT.ctx for this project
+## Step 3 — Find CURRENT.ctx for this project
 
 ```bash
 PROJECT=$(basename "$PWD")
@@ -36,7 +65,7 @@ Run /session-save at the end of a session to start accumulating context.
 ```
 Stop here.
 
-## Step 3 — Acknowledge and orient
+## Step 4 — Acknowledge and orient
 
 After reading CURRENT.ctx, output a brief acknowledgment. Do NOT reprint the raw file.
 
@@ -58,7 +87,7 @@ Ready. What would you like to work on?
 
 Keep this under 120 words. Orient fast, don't repeat everything.
 
-## Step 4 — Optional: history
+## Step 5 — Optional: history
 
 If the user passes `list` as an argument (e.g. `/session-load list`), show all saved snapshots instead of loading:
 

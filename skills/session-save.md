@@ -1,6 +1,6 @@
 Compact the current conversation context and merge it into the project's cumulative CURRENT.ctx, then push to remote.
 
-## Step 1 — Auto-setup sessions repo
+## Step 1 — Ensure sessions repo is set up
 
 Check if ~/.claude/sessions is already a git repo:
 
@@ -8,13 +8,42 @@ Check if ~/.claude/sessions is already a git repo:
 git -C ~/.claude/sessions rev-parse --git-dir 2>/dev/null
 ```
 
-If it is NOT a git repo, auto-clone from the known remote:
+**If it IS a git repo** → proceed to Step 2.
+
+**If it is NOT a git repo**, check for a saved remote URL:
 
 ```bash
-git clone https://github.com/Kimseungzzang/claude-sessions.git ~/.claude/sessions
+cat ~/.claude/sessions-remote 2>/dev/null
 ```
 
-If clone fails, stop and report the error.
+- **URL found** → clone it:
+  ```bash
+  git clone {saved_url} ~/.claude/sessions
+  ```
+
+- **No URL found** → ask the user:
+  ```
+  No sessions repo configured. Choose an option:
+
+  1. I have an existing repo URL → paste it and I'll clone it
+  2. Create a new private repo now → I'll guide you through it
+
+  Which option? (1 or 2)
+  ```
+
+  If option 1: clone the provided URL, then save it:
+  ```bash
+  git clone {url} ~/.claude/sessions
+  echo "{url}" > ~/.claude/sessions-remote
+  ```
+
+  If option 2: guide the user to run:
+  ```bash
+  gh repo create claude-sessions --private
+  git clone https://github.com/{username}/claude-sessions.git ~/.claude/sessions
+  echo "https://github.com/{username}/claude-sessions.git" > ~/.claude/sessions-remote
+  ```
+  Then proceed once done.
 
 ## Step 2 — Pull latest
 
