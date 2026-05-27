@@ -14,6 +14,7 @@ npx zzang-claude-skills
 |------|------|
 | `/obsidian` | 오늘 대화를 요약해서 Obsidian vault에 저장 |
 | `/github-summary` | GitHub URL을 받아 저장소 내용을 한국어로 요약 |
+| `/codex-review-loop` | 개발 완료 후 Codex CLI로 코드 리뷰 → 이슈 수정 → 클린할 때까지 반복 (최대 3회) |
 
 ## 스킬 추가 방법
 
@@ -23,6 +24,7 @@ npx zzang-claude-skills
 skills/
 ├── obsidian.md
 ├── github-summary.md
+├── codex-review-loop.md
 └── 새스킬.md   ← 여기에 추가
 ```
 
