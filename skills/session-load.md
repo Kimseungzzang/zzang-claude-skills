@@ -2,10 +2,10 @@ Restore accumulated project context from CURRENT.ctx for the current project.
 
 ## Step 1 — Ensure sessions repo is set up
 
-Check if ~/.claude/ctx is already a git repo:
+Check if ~/.claude/zzang-ctx is already a git repo:
 
 ```bash
-git -C ~/.claude/ctx rev-parse --git-dir 2>/dev/null
+git -C ~/.claude/zzang-ctx rev-parse --git-dir 2>/dev/null
 ```
 
 **If it IS a git repo** → proceed to Step 2.
@@ -13,12 +13,12 @@ git -C ~/.claude/ctx rev-parse --git-dir 2>/dev/null
 **If it is NOT a git repo**, check for a saved remote URL:
 
 ```bash
-cat ~/.claude/ctx-remote 2>/dev/null
+cat ~/.claude/zzang-zzang-ctx-remote 2>/dev/null
 ```
 
 - **URL found** → clone it:
   ```bash
-  git clone {saved_url} ~/.claude/ctx
+  git clone {saved_url} ~/.claude/zzang-ctx
   ```
 
 - **No URL found** → ask the user:
@@ -33,22 +33,22 @@ cat ~/.claude/ctx-remote 2>/dev/null
 
   If option 1: clone the provided URL, then save it:
   ```bash
-  git clone {url} ~/.claude/ctx
-  echo "{url}" > ~/.claude/ctx-remote
+  git clone {url} ~/.claude/zzang-ctx
+  echo "{url}" > ~/.claude/zzang-zzang-ctx-remote
   ```
 
   If option 2: guide the user to run:
   ```bash
   gh repo create claude-sessions --private
-  git clone https://github.com/{username}/claude-sessions.git ~/.claude/ctx
-  echo "https://github.com/{username}/claude-sessions.git" > ~/.claude/ctx-remote
+  git clone https://github.com/{username}/claude-sessions.git ~/.claude/zzang-ctx
+  echo "https://github.com/{username}/claude-sessions.git" > ~/.claude/zzang-zzang-ctx-remote
   ```
   Then proceed once done.
 
 ## Step 2 — Pull latest
 
 ```bash
-git -C ~/.claude/ctx pull --rebase 2>/dev/null || true
+git -C ~/.claude/zzang-ctx pull --rebase 2>/dev/null || true
 ```
 
 ## Step 3 — Find CURRENT.ctx for this project
@@ -62,7 +62,7 @@ git rev-parse --show-toplevel 2>/dev/null | xargs basename
 If NOT in a git repo, use `basename "$PWD"` and warn the user.
 
 ```bash
-cat ~/.claude/ctx/$PROJECT/CURRENT.ctx 2>/dev/null
+cat ~/.claude/zzang-ctx/$PROJECT/CURRENT.ctx 2>/dev/null
 ```
 
 If file does not exist:
@@ -99,7 +99,7 @@ Keep this under 120 words. Orient fast, don't repeat everything.
 If the user passes `list` as an argument (e.g. `/session-load list`), show all saved snapshots instead of loading:
 
 ```bash
-ls -lt ~/.claude/ctx/$PROJECT/ | grep -v CURRENT
+ls -lt ~/.claude/zzang-ctx/$PROJECT/ | grep -v CURRENT
 ```
 
 Output as a numbered list. The user can then ask to load a specific snapshot for a past context.

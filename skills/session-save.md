@@ -2,10 +2,10 @@ Compact the current conversation context and save per-project filtered snapshots
 
 ## Step 1 — Ensure sessions repo is set up
 
-Check if ~/.claude/ctx is already a git repo:
+Check if ~/.claude/zzang-ctx is already a git repo:
 
 ```bash
-git -C ~/.claude/ctx rev-parse --git-dir 2>/dev/null
+git -C ~/.claude/zzang-ctx rev-parse --git-dir 2>/dev/null
 ```
 
 **If it IS a git repo** → proceed to Step 2.
@@ -13,12 +13,12 @@ git -C ~/.claude/ctx rev-parse --git-dir 2>/dev/null
 **If it is NOT a git repo**, check for a saved remote URL:
 
 ```bash
-cat ~/.claude/ctx-remote 2>/dev/null
+cat ~/.claude/zzang-zzang-ctx-remote 2>/dev/null
 ```
 
 - **URL found** → clone it:
   ```bash
-  git clone {saved_url} ~/.claude/ctx
+  git clone {saved_url} ~/.claude/zzang-ctx
   ```
 
 - **No URL found** → ask the user:
@@ -33,21 +33,21 @@ cat ~/.claude/ctx-remote 2>/dev/null
 
   If option 1: clone the provided URL, then save it:
   ```bash
-  git clone {url} ~/.claude/ctx
-  echo "{url}" > ~/.claude/ctx-remote
+  git clone {url} ~/.claude/zzang-ctx
+  echo "{url}" > ~/.claude/zzang-zzang-ctx-remote
   ```
 
   If option 2: guide the user to run:
   ```bash
   gh repo create claude-sessions --private
-  git clone https://github.com/{username}/claude-sessions.git ~/.claude/ctx
-  echo "https://github.com/{username}/claude-sessions.git" > ~/.claude/ctx-remote
+  git clone https://github.com/{username}/claude-sessions.git ~/.claude/zzang-ctx
+  echo "https://github.com/{username}/claude-sessions.git" > ~/.claude/zzang-zzang-ctx-remote
   ```
 
 ## Step 2 — Pull latest
 
 ```bash
-git -C ~/.claude/ctx pull --rebase 2>/dev/null || true
+git -C ~/.claude/zzang-ctx pull --rebase 2>/dev/null || true
 ```
 
 ## Step 3 — Detect projects worked on this session
@@ -83,14 +83,14 @@ Proceed with the confirmed project list.
 ## Step 4 — For each project: read existing CURRENT.ctx
 
 ```bash
-cat ~/.claude/ctx/{project}/CURRENT.ctx 2>/dev/null
+cat ~/.claude/zzang-ctx/{project}/CURRENT.ctx 2>/dev/null
 ```
 
 Load any existing accumulated context for that project before writing new content.
 
 ## Step 5 — For each project: write a filtered snapshot
 
-File: `~/.claude/ctx/{project}/$(date '+%Y-%m-%dT%H-%M')`
+File: `~/.claude/zzang-ctx/{project}/$(date '+%Y-%m-%dT%H-%M')`
 
 **Critical rule**: each project's snapshot must contain ONLY information relevant to that project. Do not bleed context from other projects into this file.
 
@@ -116,7 +116,7 @@ Field formatting rules:
 
 ## Step 6 — For each project: merge into CURRENT.ctx
 
-Update `~/.claude/ctx/{project}/CURRENT.ctx` using these rules:
+Update `~/.claude/zzang-ctx/{project}/CURRENT.ctx` using these rules:
 
 | Field | Rule |
 |-------|------|
@@ -135,9 +135,9 @@ Keep CURRENT.ctx under ~300 tokens (raised from 200 to accommodate TRIED and DEC
 ## Step 7 — Commit and push all at once
 
 ```bash
-git -C ~/.claude/ctx add .
-git -C ~/.claude/ctx commit -m "session: {project-list} $(date '+%Y-%m-%dT%H:%M')"
-git -C ~/.claude/ctx push
+git -C ~/.claude/zzang-ctx add .
+git -C ~/.claude/zzang-ctx commit -m "session: {project-list} $(date '+%Y-%m-%dT%H:%M')"
+git -C ~/.claude/zzang-ctx push
 ```
 
 ## Step 8 — Report
@@ -145,8 +145,8 @@ git -C ~/.claude/ctx push
 ```
 ✅ Session saved for {N} project(s):
 
-  • {project-a} → ~/.claude/ctx/project-a/{timestamp}
-  • {project-b} → ~/.claude/ctx/project-b/{timestamp}
+  • {project-a} → ~/.claude/zzang-ctx/project-a/{timestamp}
+  • {project-b} → ~/.claude/zzang-ctx/project-b/{timestamp}
 
 📋 CURRENT.ctx updated for each.
 📤 Pushed to remote.

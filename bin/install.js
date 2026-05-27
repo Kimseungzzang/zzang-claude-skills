@@ -8,7 +8,7 @@ const { execSync } = require('child_process');
 
 const SKILLS_DIR = path.join(os.homedir(), '.claude', 'commands');
 const SOURCE_DIR = path.join(__dirname, '..', 'skills');
-const SESSIONS_REMOTE_FILE = path.join(os.homedir(), '.claude', 'ctx-remote');
+const SESSIONS_REMOTE_FILE = path.join(os.homedir(), '.claude', 'zzang-ctx-remote');
 
 fs.mkdirSync(SKILLS_DIR, { recursive: true });
 
