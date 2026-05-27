@@ -1,4 +1,4 @@
-Compact the current conversation context and merge it into the project's cumulative CURRENT.ctx, then push to remote.
+Compact the current conversation context and save per-project filtered snapshots to the sessions repo.
 
 ## Step 1 — Ensure sessions repo is set up
 
@@ -43,7 +43,6 @@ cat ~/.claude/sessions-remote 2>/dev/null
   git clone https://github.com/{username}/claude-sessions.git ~/.claude/sessions
   echo "https://github.com/{username}/claude-sessions.git" > ~/.claude/sessions-remote
   ```
-  Then proceed once done.
 
 ## Step 2 — Pull latest
 
@@ -51,45 +50,68 @@ cat ~/.claude/sessions-remote 2>/dev/null
 git -C ~/.claude/sessions pull --rebase 2>/dev/null || true
 ```
 
-## Step 3 — Detect project info
+## Step 3 — Detect projects worked on this session
+
+Get the current project from git root (more reliable than basename of cwd):
 
 ```bash
-PROJECT=$(basename "$PWD")
-BRANCH=$(git branch --show-current 2>/dev/null || echo "N/A")
-TIMESTAMP=$(date '+%Y-%m-%dT%H:%M')
-mkdir -p ~/.claude/sessions/$PROJECT
+git rev-parse --show-toplevel 2>/dev/null | xargs basename
 ```
 
-## Step 4 — Read existing CURRENT.ctx (if any)
+If NOT in a git repo, ask the user:
+```
+You're not inside a git repo. What should this session be saved under?
+(e.g. "dotfiles", "general", "research")
+```
+
+Then review the full conversation and identify **all distinct projects** discussed or worked on — look for:
+- Directory paths mentioned (`cd`, file paths, repo names)
+- Different codebases, tools, or repos referenced
+- Context switches between different projects
+
+Present the detected list to the user and confirm:
+```
+Detected projects in this session:
+  1. project-a  (/Users/kim/project-a)
+  2. project-b  (/Users/kim/project-b)
+
+Save context for all of them? (Y/n) or enter numbers to select (e.g. 1,2)
+```
+
+Proceed with the confirmed project list.
+
+## Step 4 — For each project: read existing CURRENT.ctx
 
 ```bash
-cat ~/.claude/sessions/$PROJECT/CURRENT.ctx 2>/dev/null
+cat ~/.claude/sessions/{project}/CURRENT.ctx 2>/dev/null
 ```
 
-Use the existing content to understand accumulated history (prior CTX facts, DECIDED, OPEN items).
+Load any existing accumulated context for that project before writing new content.
 
-## Step 5 — Write this session's snapshot file
+## Step 5 — For each project: write a filtered snapshot
 
-File: `~/.claude/sessions/$PROJECT/$(date '+%Y-%m-%dT%H-%M')`
+File: `~/.claude/sessions/{project}/$(date '+%Y-%m-%dT%H-%M')`
 
-Write the current session in ultra-compact format (keywords only, no prose):
+**Critical rule**: each project's snapshot must contain ONLY information relevant to that project. Do not bleed context from other projects into this file.
+
+Write in ultra-compact format (keywords only, no prose):
 
 ```
-SESSION {TIMESTAMP} | {/absolute/cwd} | {branch}
+SESSION {TIMESTAMP} | {/absolute/path/to/project} | {branch}
 STACK: {lang/framework/db}
-DONE: {item; item}
-CHANGED: {file(reason); file(new); file(del)}
-DECIDED: {decision(reason); decision(reason)}
-TODO: {task | task | task}
-OPEN: {question; question}
-CTX: {non-obvious facts; semicolon-separated}
+DONE: {items done on THIS project only}
+CHANGED: {files changed in THIS project only}
+DECIDED: {decisions made for THIS project only}
+TODO: {tasks for THIS project only}
+OPEN: {open questions for THIS project only}
+CTX: {non-obvious facts relevant to THIS project only}
 ```
 
-Use `—` for empty fields. Keep values as short keywords.
+Use `—` for empty fields.
 
-## Step 6 — Merge into CURRENT.ctx
+## Step 6 — For each project: merge into CURRENT.ctx
 
-Update `~/.claude/sessions/$PROJECT/CURRENT.ctx` by merging the new session into the accumulated state. **Apply these rules per field:**
+Update `~/.claude/sessions/{project}/CURRENT.ctx` using these rules:
 
 | Field | Rule |
 |-------|------|
@@ -97,26 +119,30 @@ Update `~/.claude/sessions/$PROJECT/CURRENT.ctx` by merging the new session into
 | `STACK` | Union of all stacks seen (deduplicate) |
 | `DONE` | **Replace** with this session's DONE only |
 | `CHANGED` | **Replace** with this session's CHANGED only |
-| `DECIDED` | **Accumulate** — append new decisions, keep all prior |
+| `DECIDED` | **Accumulate** — append new, keep all prior |
 | `TODO` | Remove items that appear in DONE; add new items |
-| `OPEN` | **Accumulate** — keep prior open questions; add new ones |
-| `CTX` | **Accumulate** — union of all CTX facts (deduplicate) |
+| `OPEN` | **Accumulate** — keep prior, add new |
+| `CTX` | **Accumulate** — union, deduplicate |
 
-The resulting CURRENT.ctx must stay under ~200 tokens. If CTX or DECIDED grows too long, compress older entries to their essence (1-3 words each) while preserving meaning.
+Keep CURRENT.ctx under ~200 tokens. Compress older entries if needed.
 
-## Step 7 — Commit and push
+## Step 7 — Commit and push all at once
 
 ```bash
-git -C ~/.claude/sessions add $PROJECT/
-git -C ~/.claude/sessions commit -m "session: $PROJECT $TIMESTAMP"
+git -C ~/.claude/sessions add .
+git -C ~/.claude/sessions commit -m "session: {project-list} $(date '+%Y-%m-%dT%H:%M')"
 git -C ~/.claude/sessions push
 ```
 
 ## Step 8 — Report
 
 ```
-✅ Saved → ~/.claude/sessions/{project}/{timestamp}
-📋 CURRENT.ctx updated (accumulated)
+✅ Session saved for {N} project(s):
+
+  • {project-a} → ~/.claude/sessions/project-a/{timestamp}
+  • {project-b} → ~/.claude/sessions/project-b/{timestamp}
+
+📋 CURRENT.ctx updated for each.
 📤 Pushed to remote.
 
 Run `/session-load` at the start of your next session.

@@ -53,8 +53,15 @@ git -C ~/.claude/sessions pull --rebase 2>/dev/null || true
 
 ## Step 3 — Find CURRENT.ctx for this project
 
+Detect project name from git root (more reliable than basename of cwd):
+
 ```bash
-PROJECT=$(basename "$PWD")
+git rev-parse --show-toplevel 2>/dev/null | xargs basename
+```
+
+If NOT in a git repo, use `basename "$PWD"` and warn the user.
+
+```bash
 cat ~/.claude/sessions/$PROJECT/CURRENT.ctx 2>/dev/null
 ```
 
