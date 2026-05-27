@@ -264,6 +264,52 @@ Machine A                          Machine B
 
 ---
 
+## ⚠️ Cautions
+
+**Keep your sessions repo private.**
+CURRENT.ctx captures file paths, decisions, API key names, and internal architecture details. Never use a public repo.
+
+**Run `/session-save` before you hit the token limit — not after.**
+Once Claude's context is compacted by the system, fine-grained detail is already gone. Save at natural breakpoints (end of a feature, before switching tasks).
+
+**Don't delete `~/.claude/zzang-ctx/` manually.**
+`task-log.md` lives there and is local-only. If you wipe the folder before `/session-save`, unabsorbed entries are gone permanently.
+
+**Don't edit CURRENT.ctx by hand.**
+The merge logic expects a specific format. Manual edits can break field accumulation silently.
+
+**If `/session-save` is interrupted mid-run**, re-run it. Snapshots are idempotent; re-saving overwrites cleanly.
+
+**task-log is local only by design.**
+It is never committed to GitHub. On a new machine, `/session-load` lands in Case 4 (no task-log) — that's expected, not an error.
+
+---
+
+## 💡 Recommendations
+
+**Save at milestones, not just session end.**
+`/session-save` mid-session (after finishing a feature, before starting the next) gives finer-grained recovery points and prevents losing hours of context to an unexpected crash.
+
+**Run `/session-load` before doing anything else in a new session.**
+If you start working before loading, Claude has no accumulated context and may repeat decisions or miss known constraints.
+
+**Before switching machines, always `/session-save` first.**
+The other machine pulls from GitHub — if you haven't pushed, it sees stale context.
+
+**Use a dedicated repo just for sessions.**
+Don't reuse an existing repo. The sessions repo accumulates CURRENT.ctx files per project over time; a dedicated repo keeps it clean and auditable.
+
+**Keep CTX and OPEN entries terse.**
+These fields accumulate indefinitely. Verbose entries bloat CURRENT.ctx and waste tokens on load. One short sentence per fact is enough.
+
+**Add TRIED entries honestly.**
+`TRIED` prevents Claude from re-suggesting approaches that already failed. The more specific the failure reason, the more useful it is: `Redis pub/sub(race condition under concurrent writes)` beats `Redis pub/sub(failed)`.
+
+**For long multi-day tasks, prune stale OPEN and TODO items.**
+`/session-save` removes completed TODOs automatically, but open-ended items accumulate. Review and clean them when no longer relevant.
+
+---
+
 ## Adding a skill
 
 Add a `.md` file to `skills/` and run `npm publish`:
