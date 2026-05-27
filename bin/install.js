@@ -7,21 +7,22 @@ const readline = require('readline');
 const { execSync } = require('child_process');
 
 const SKILLS_DIR = path.join(os.homedir(), '.claude', 'commands');
+const SCRIPTS_DIR = path.join(os.homedir(), '.claude', 'scripts');
+const SETTINGS_FILE = path.join(os.homedir(), '.claude', 'settings.json');
 const SOURCE_DIR = path.join(__dirname, '..', 'skills');
+const SCRIPTS_SOURCE_DIR = path.join(__dirname, '..', 'scripts');
 const SESSIONS_REMOTE_FILE = path.join(os.homedir(), '.claude', 'zzang-ctx-remote');
 
 fs.mkdirSync(SKILLS_DIR, { recursive: true });
+fs.mkdirSync(SCRIPTS_DIR, { recursive: true });
 
 function ask(rl, question) {
   return new Promise(resolve => rl.question(question, resolve));
 }
 
 function repoExistsOnGitHub(url) {
-  // Extract owner/repo from URL
-  // Supports: https://github.com/owner/repo.git or https://github.com/owner/repo
   const match = url.match(/github\.com[/:]([\w.-]+)\/([\w.-]+?)(\.git)?$/);
   if (!match) return { ok: false, error: 'Could not parse GitHub URL.' };
-
   const slug = `${match[1]}/${match[2]}`;
   try {
     execSync(`gh repo view ${slug} --json name`, { stdio: 'pipe' });
@@ -35,7 +36,6 @@ async function promptRepoUrl(rl, label) {
   while (true) {
     const url = await ask(rl, `   ${label}: `);
     if (!url.trim()) return null;
-
     process.stdout.write('   Checking repo... ');
     const result = repoExistsOnGitHub(url.trim());
     if (result.ok) {
@@ -46,6 +46,47 @@ async function promptRepoUrl(rl, label) {
       const retry = await ask(rl, '   Try a different URL? (Y/n) ');
       if (retry.toLowerCase() === 'n') return null;
     }
+  }
+}
+
+function installScripts() {
+  if (!fs.existsSync(SCRIPTS_SOURCE_DIR)) return;
+  const files = fs.readdirSync(SCRIPTS_SOURCE_DIR).filter(f => f.endsWith('.sh'));
+  files.forEach(file => {
+    const src = path.join(SCRIPTS_SOURCE_DIR, file);
+    const dest = path.join(SCRIPTS_DIR, file);
+    const isUpdate = fs.existsSync(dest);
+    fs.copyFileSync(src, dest);
+    fs.chmodSync(dest, '755');
+    console.log(`${isUpdate ? '🔄 updated' : '✅ installed'}: scripts/${file}`);
+  });
+}
+
+function installHooks() {
+  const hook = {
+    type: 'command',
+    command: '~/.claude/scripts/task-log.sh'
+  };
+
+  let settings = {};
+  if (fs.existsSync(SETTINGS_FILE)) {
+    try { settings = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8')); } catch {}
+  }
+
+  settings.hooks = settings.hooks || {};
+  settings.hooks.PostToolUse = settings.hooks.PostToolUse || [];
+
+  // Add hook if not already present
+  const already = settings.hooks.PostToolUse.some(entry =>
+    entry.hooks?.some(h => h.command === hook.command)
+  );
+
+  if (!already) {
+    settings.hooks.PostToolUse.push({ matcher: '*', hooks: [hook] });
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
+    console.log('✅ installed: PostToolUse hook → task-log.sh');
+  } else {
+    console.log('🔄 up to date: PostToolUse hook');
   }
 }
 
@@ -80,7 +121,6 @@ async function setupSessionsRepo(rl) {
     await ask(rl, '   Press enter when done...');
     const username = await ask(rl, '   Your GitHub username: ');
     const url = `https://github.com/${username.trim()}/${name}.git`;
-
     process.stdout.write('   Checking repo... ');
     const result = repoExistsOnGitHub(url);
     if (result.ok) {
@@ -111,33 +151,36 @@ async function setupSessionsRepo(rl) {
 async function main() {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
-  // Install skills
-  const files = fs.readdirSync(SOURCE_DIR).filter(f => f.endsWith('.md'));
+  console.log('\n🚀 zzang-claude-skills installing...\n');
 
+  // 1. Skills
+  const files = fs.readdirSync(SOURCE_DIR).filter(f => f.endsWith('.md'));
   if (files.length === 0) {
     console.log('No skills to install.');
     rl.close();
     return;
   }
-
-  console.log('\n🚀 zzang-claude-skills installing...\n');
-
   files.forEach(file => {
     const src = path.join(SOURCE_DIR, file);
     const dest = path.join(SKILLS_DIR, file);
-    const skillName = file.replace('.md', '');
     const isUpdate = fs.existsSync(dest);
     fs.copyFileSync(src, dest);
-    console.log(`${isUpdate ? '🔄 updated' : '✅ installed'}: /${skillName}`);
+    console.log(`${isUpdate ? '🔄 updated' : '✅ installed'}: /${file.replace('.md', '')}`);
   });
 
-  console.log(`\n${files.length} skills installed → ${SKILLS_DIR}`);
+  // 2. Scripts
+  console.log('');
+  installScripts();
 
-  // Session repo setup
+  // 3. Hooks
+  console.log('');
+  installHooks();
+
+  // 4. Sessions repo
   await setupSessionsRepo(rl);
 
   rl.close();
-  console.log('\nRestart Claude Code to activate skills.\n');
+  console.log('\nRestart Claude Code to activate.\n');
 }
 
 main();
