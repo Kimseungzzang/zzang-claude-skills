@@ -1,6 +1,6 @@
 # zzang-claude-skills
 
-A collection of custom Claude Code skills by kimseungzzang.
+A collection of custom Claude Code skills by kimseungzzang — including a full cross-session, cross-machine context persistence system.
 
 ## Install
 
@@ -8,41 +8,273 @@ A collection of custom Claude Code skills by kimseungzzang.
 npx zzang-claude-skills
 ```
 
-The installer will set up all skills and interactively configure a sessions repo for `/session-save` and `/session-load`.
+The installer automatically:
+- Installs all skills into `~/.claude/commands/`
+- Installs `task-log.sh` into `~/.claude/scripts/`
+- Registers the `PostToolUse` hook in `~/.claude/settings.json`
+- Guides you through setting up a private GitHub repo for session storage
+
+**Restart Claude Code after install to activate hooks.**
 
 ## Skills
 
 | Skill | Description |
 |-------|-------------|
+| `/session-save` | Compact the current session context and push to your sessions repo |
+| `/session-load` | Pull the latest context and resume where you left off |
 | `/obsidian` | Summarize today's conversation and save it to your Obsidian vault |
-| `/github-summary` | Fetch a GitHub repo URL and summarize it in Korean |
-| `/codex-review-loop` | Run a Codex CLI code review after finishing a task, fix issues, and repeat until clean (max 3 iterations) |
-| `/session-save` | Compact the current session context into an ultra-dense format and push to your sessions repo (accumulated per project) |
-| `/session-load` | Pull the latest context from your sessions repo and resume where you left off |
+| `/github-summary` | Fetch a GitHub repo URL and summarize it |
+| `/codex-review-loop` | Run Codex CLI review, fix issues, repeat until clean (max 3 iterations) |
 
-## Session persistence
+---
 
-`/session-save` and `/session-load` require a private git repo to store context across sessions and machines.
+## Session Persistence System
 
-The installer will walk you through it. If you skip it during install, run again anytime:
+`/session-save` and `/session-load` form a full cross-session, cross-machine memory system for Claude Code.
 
-```bash
-npx zzang-claude-skills
+### How it works — overview
+
+```
+Every tool use  →  PostToolUse hook  →  task-log.md (local only)
+                                              │
+                                    /session-save
+                                              │
+                          ┌───────────────────┼───────────────────┐
+                          ▼                   ▼                   ▼
+                    reads task-log     writes snapshot      updates CURRENT.ctx
+                    (absorbs it)       (timestamped)        (accumulated state)
+                          │
+                          └──── git commit & push ──→  GitHub (private repo)
+                                                               │
+                                                       /session-load
+                                                               │
+                                              git pull → reads CURRENT.ctx
+                                                       + checks task-log
+                                                               │
+                                                       orients you to resume
 ```
 
-On a new machine, just install the skills — `/session-load` will automatically clone your sessions repo.
+---
+
+### `/session-save` flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        /session-save                            │
+└─────────────────────────────────────────────────────────────────┘
+         │
+         ▼
+[1] Is ~/.claude/zzang-ctx a git repo?
+         │
+    NO ──┤
+         │   Is ~/.claude/zzang-ctx-remote set?
+         │         │
+         │    YES  ▼
+         │   git clone {url} ~/.claude/zzang-ctx
+         │         │
+         │    NO   ▼
+         │   Ask user: existing repo or create new?
+         │         │
+         └─────────┘
+         │
+    YES  ▼
+[2] git pull --rebase (fetch latest from remote)
+         │
+         ▼
+[3] Detect project(s) worked on this session
+    - git rev-parse --show-toplevel | xargs basename
+    - Scan conversation for other project paths
+    - Show list, ask user to confirm
+         │
+         ▼
+[4] For each project:
+    │
+    ├─► Read ~/.claude/zzang-ctx/{project}/task-log.md  (local only)
+    │       └── use it to accurately populate DONE/CHANGED
+    │       └── record last line timestamp as TASK-LOG-ID
+    │
+    ├─► Read ~/.claude/zzang-ctx/{project}/CURRENT.ctx  (accumulated history)
+    │
+    ▼
+[5] Write timestamped snapshot
+    ~/.claude/zzang-ctx/{project}/YYYY-MM-DDTHH-MM
+    ┌──────────────────────────────────────────────┐
+    │ SESSION  timestamp | /path/to/project | branch│
+    │ STACK:   lang/framework/db                    │
+    │ DONE:    items done this session              │
+    │ CHANGED: file(reason); file(new)              │
+    │ TRIED:   what failed and why                  │
+    │ DECIDED: decisions with reasoning             │
+    │ TODO:    pending tasks                        │
+    │ OPEN:    open questions                       │
+    │ CTX:     non-obvious project facts            │
+    └──────────────────────────────────────────────┘
+         │
+         ▼
+[6] Merge into CURRENT.ctx
+    ┌─────────────┬────────────────────────────────────────┐
+    │ Field       │ Rule                                   │
+    ├─────────────┼────────────────────────────────────────┤
+    │ SESSION     │ Always update to latest timestamp      │
+    │ TASK-LOG-ID │ Replace with last task-log line time   │
+    │ STACK       │ Union (deduplicate)                    │
+    │ DONE        │ Replace with this session only         │
+    │ CHANGED     │ Replace with this session only         │
+    │ TRIED       │ Accumulate — NEVER compress            │
+    │ DECIDED     │ Accumulate — NEVER compress            │
+    │ TODO        │ Remove completed; add new              │
+    │ OPEN        │ Accumulate                             │
+    │ CTX         │ Accumulate (union, deduplicate)        │
+    └─────────────┴────────────────────────────────────────┘
+         │
+         ▼
+[7] Delete task-log  (it's now absorbed into CURRENT.ctx)
+    rm ~/.claude/zzang-ctx/{project}/task-log.md
+         │
+         ▼
+[8] git add . && git commit && git push
+         │
+         ▼
+[9] Report: ✅ saved N projects, pushed to remote
+```
+
+---
+
+### `/session-load` flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        /session-load                            │
+└─────────────────────────────────────────────────────────────────┘
+         │
+         ▼
+[1] Is ~/.claude/zzang-ctx a git repo?  (same setup check as save)
+         │
+         ▼
+[2] git pull --rebase
+         │
+         ▼
+[3] Detect project name
+    git rev-parse --show-toplevel | xargs basename
+    └── if not in git repo → use basename $PWD + warn
+         │
+         ▼
+[4] Read CURRENT.ctx
+    cat ~/.claude/zzang-ctx/{project}/CURRENT.ctx
+         │
+         └── not found? → "No context saved for this project. Run /session-save first."
+         │
+         ▼
+[5] Compare task-log vs TASK-LOG-ID in CURRENT.ctx
+
+    SAVED_ID = TASK-LOG-ID from CURRENT.ctx
+    LAST_LOG = timestamp of last line in local task-log.md
+
+         │
+    ┌────┴─────────────────────────────────────────────────┐
+    │                                                      │
+    ▼                                                      ▼
+Case 1: LAST_LOG == SAVED_ID             Case 4: No local task-log
+→ Clean state, no interrupted work       → Different machine
+→ Proceed normally                       → Inform user, use CURRENT.ctx only
+    │                                                      │
+    ▼                                                      │
+Case 2: LAST_LOG > SAVED_ID             Case 3: task-log header > SESSION
+→ Unsaved work after last /session-save  → New task in progress (not interrupted)
+→ Show unsaved entries                   → Show task-log as current work context
+→ Ask: resume from here?                          │
+    │                                             │
+    └──────────────────┬──────────────────────────┘
+                       │
+                       ▼
+[6] Output brief orientation (≤150 words)
+    ┌──────────────────────────────────────────────────────┐
+    │ 📂 Context loaded for {project} (last: {timestamp}) │
+    │                                                      │
+    │ Continuing: {1-sentence summary}                     │
+    │                                                      │
+    │ Key context:                                         │
+    │ • {CTX fact}                                         │
+    │                                                      │
+    │ Pending TODOs: {items}                               │
+    │ Open questions: {items}                              │
+    │                                                      │
+    │ ⚠️  Last task interrupted at HH:MM:   (if Case 2)   │
+    │    Last action: {tool} {detail}                      │
+    └──────────────────────────────────────────────────────┘
+```
+
+---
+
+### PostToolUse hook — `task-log.sh`
+
+Runs automatically after every tool use. Appends one line to `task-log.md`:
+
+```
+~/.claude/zzang-ctx/{project}/task-log.md
+
+## 2026-05-28T14:00 | my-project       ← header (created on first entry)
+[14:01] Write      src/api.py
+[14:03] Bash       npm test
+[14:05] Edit       src/api.py
+```
+
+- **Local only** — never pushed to GitHub directly
+- **Absorbed by `/session-save`** — content is merged into CURRENT.ctx, then deleted
+- **Read by `/session-load`** — compared against `TASK-LOG-ID` to detect interrupted work
+- **Purpose** — captures exactly what happened even if Claude is force-killed (no Stop hook needed)
+
+---
+
+### Storage layout
+
+```
+~/.claude/
+├── commands/
+│   ├── session-save.md       ← skill definitions
+│   └── session-load.md
+├── scripts/
+│   └── task-log.sh           ← PostToolUse hook script
+├── settings.json             ← hook registration
+├── zzang-ctx-remote          ← stores your GitHub repo URL
+└── zzang-ctx/                ← git repo (cloned from GitHub)
+    ├── .gitignore
+    ├── my-project/
+    │   ├── CURRENT.ctx       ← accumulated state (pushed)
+    │   ├── task-log.md       ← live log (local only, not pushed)
+    │   └── 2026-05-28T14-00  ← timestamped snapshots (pushed)
+    └── other-project/
+        └── CURRENT.ctx
+```
+
+---
+
+### Multi-machine setup
+
+```
+Machine A                          Machine B
+─────────                          ─────────
+/session-save                      npx zzang-claude-skills
+  → pushes to GitHub repo            → clones from zzang-ctx-remote
+                                   /session-load
+                                     → pulls CURRENT.ctx from GitHub
+                                     → no task-log (Case 4 — expected)
+                                     → resumes from saved state
+```
+
+---
 
 ## Adding a skill
 
-Add a `.md` file to `skills/` and publish to npm — it gets installed automatically.
+Add a `.md` file to `skills/` and run `npm publish`:
 
 ```
 skills/
+├── session-save.md
+├── session-load.md
 ├── obsidian.md
 ├── github-summary.md
 ├── codex-review-loop.md
-├── session-save.md
-├── session-load.md
 └── your-skill.md   ← add here
 ```
 
