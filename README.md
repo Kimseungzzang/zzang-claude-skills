@@ -8,17 +8,7 @@ kimseungzzang의 Claude Code 커스텀 스킬 모음
 npx zzang-claude-skills
 ```
 
-`/session-save`, `/session-load` 를 쓰려면 세션 저장소 repo를 지정:
-
-```bash
-npx zzang-claude-skills --sessions-repo https://github.com/{your-username}/claude-sessions.git
-```
-
-처음이라면 먼저 private repo 생성:
-
-```bash
-gh repo create claude-sessions --private
-```
+스킬 설치 후 `/session-save`, `/session-load` 사용을 위한 sessions repo를 대화형으로 설정한다.
 
 ## 포함된 스킬
 

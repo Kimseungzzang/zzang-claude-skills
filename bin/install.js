@@ -3,53 +3,92 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const readline = require('readline');
 
 const SKILLS_DIR = path.join(os.homedir(), '.claude', 'commands');
 const SOURCE_DIR = path.join(__dirname, '..', 'skills');
 const SESSIONS_REMOTE_FILE = path.join(os.homedir(), '.claude', 'sessions-remote');
 
-// Parse --sessions-repo flag
-const args = process.argv.slice(2);
-const repoFlagIndex = args.findIndex(a => a === '--sessions-repo');
-const sessionsRepo = repoFlagIndex !== -1 ? args[repoFlagIndex + 1] : null;
-
-// ~/.claude/commands 없으면 생성
 fs.mkdirSync(SKILLS_DIR, { recursive: true });
 
-// Save sessions repo URL if provided
-if (sessionsRepo) {
-  fs.writeFileSync(SESSIONS_REMOTE_FILE, sessionsRepo.trim());
-  console.log(`\n📌 Sessions repo saved: ${sessionsRepo}`);
-} else if (!fs.existsSync(SESSIONS_REMOTE_FILE)) {
-  console.log(`\n💡 Tip: specify your sessions repo to enable /session-save and /session-load across machines:`);
-  console.log(`   npx zzang-claude-skills --sessions-repo https://github.com/{you}/claude-sessions.git\n`);
+function ask(rl, question) {
+  return new Promise(resolve => rl.question(question, resolve));
 }
 
-const files = fs.readdirSync(SOURCE_DIR).filter(f => f.endsWith('.md'));
+async function setupSessionsRepo(rl) {
+  const existing = fs.existsSync(SESSIONS_REMOTE_FILE)
+    ? fs.readFileSync(SESSIONS_REMOTE_FILE, 'utf8').trim()
+    : null;
 
-if (files.length === 0) {
-  console.log('설치할 스킬이 없습니다.');
-  process.exit(0);
-}
-
-console.log(`\n🚀 zzang-claude-skills 설치 시작\n`);
-
-let installed = 0;
-
-files.forEach(file => {
-  const src = path.join(SOURCE_DIR, file);
-  const dest = path.join(SKILLS_DIR, file);
-  const skillName = file.replace('.md', '');
-
-  if (fs.existsSync(dest)) {
-    fs.copyFileSync(src, dest);
-    console.log(`🔄 업데이트: /${skillName}`);
+  if (existing) {
+    console.log(`\n📌 Sessions repo already configured: ${existing}`);
+    const change = await ask(rl, '   Change it? (y/N) ');
+    if (change.toLowerCase() !== 'y') return;
   } else {
-    fs.copyFileSync(src, dest);
-    console.log(`✅ 설치됨:  /${skillName}`);
+    console.log('\n📦 /session-save and /session-load need a private git repo to store context.');
+    const setup = await ask(rl, '   Set it up now? (Y/n) ');
+    if (setup.toLowerCase() === 'n') {
+      console.log('   Skipped. Run `npx zzang-claude-skills` again anytime to set it up.');
+      return;
+    }
   }
-  installed++;
-});
 
-console.log(`\n총 ${installed}개 스킬 설치 완료 → ${SKILLS_DIR}\n`);
-console.log('Claude Code를 재시작하면 스킬이 활성화됩니다.');
+  console.log('\n   Do you have an existing sessions repo?');
+  console.log('   1) Yes — I have a repo URL');
+  console.log('   2) No  — create one now with gh CLI');
+  const choice = await ask(rl, '   Choice (1/2): ');
+
+  if (choice.trim() === '2') {
+    const repoName = await ask(rl, '   Repo name (default: claude-sessions): ');
+    const name = repoName.trim() || 'claude-sessions';
+    console.log(`\n   Run this, then come back:\n`);
+    console.log(`     gh repo create ${name} --private\n`);
+    await ask(rl, '   Press enter when done...');
+    const username = await ask(rl, '   Your GitHub username: ');
+    const url = `https://github.com/${username.trim()}/${name}.git`;
+    fs.writeFileSync(SESSIONS_REMOTE_FILE, url);
+    console.log(`\n   ✅ Saved: ${url}`);
+  } else {
+    const url = await ask(rl, '   Paste your repo URL: ');
+    if (url.trim()) {
+      fs.writeFileSync(SESSIONS_REMOTE_FILE, url.trim());
+      console.log(`\n   ✅ Saved: ${url.trim()}`);
+    } else {
+      console.log('   No URL entered, skipped.');
+    }
+  }
+}
+
+async function main() {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+
+  // Install skills
+  const files = fs.readdirSync(SOURCE_DIR).filter(f => f.endsWith('.md'));
+
+  if (files.length === 0) {
+    console.log('No skills to install.');
+    rl.close();
+    return;
+  }
+
+  console.log('\n🚀 zzang-claude-skills installing...\n');
+
+  files.forEach(file => {
+    const src = path.join(SOURCE_DIR, file);
+    const dest = path.join(SKILLS_DIR, file);
+    const skillName = file.replace('.md', '');
+    const isUpdate = fs.existsSync(dest);
+    fs.copyFileSync(src, dest);
+    console.log(`${isUpdate ? '🔄 updated' : '✅ installed'}: /${skillName}`);
+  });
+
+  console.log(`\n${files.length} skills installed → ${SKILLS_DIR}`);
+
+  // Session repo setup
+  await setupSessionsRepo(rl);
+
+  rl.close();
+  console.log('\nRestart Claude Code to activate skills.\n');
+}
+
+main();
