@@ -94,20 +94,25 @@ File: `~/.claude/sessions/{project}/$(date '+%Y-%m-%dT%H-%M')`
 
 **Critical rule**: each project's snapshot must contain ONLY information relevant to that project. Do not bleed context from other projects into this file.
 
-Write in ultra-compact format (keywords only, no prose):
+Write in the following format. Fields marked **keyword-only** must stay terse. Fields marked **sentence-allowed** can use short sentences when keywords alone lose critical meaning.
 
 ```
 SESSION {TIMESTAMP} | {/absolute/path/to/project} | {branch}
 STACK: {lang/framework/db}
 DONE: {items done on THIS project only}
-CHANGED: {files changed in THIS project only}
-DECIDED: {decisions made for THIS project only}
+CHANGED: {file(reason); file(new); file(del)}
+TRIED: {what was attempted but failed — why it failed}
+DECIDED: {decision — full reasoning if non-obvious, one sentence max per item}
 TODO: {tasks for THIS project only}
 OPEN: {open questions for THIS project only}
 CTX: {non-obvious facts relevant to THIS project only}
 ```
 
-Use `—` for empty fields.
+Field formatting rules:
+- `DONE`, `CHANGED`, `TODO`, `OPEN`, `STACK` — **keyword-only**, semicolon-separated
+- `TRIED` — **sentence-allowed**: `{what}({why it failed})` e.g. `Redis pub/sub(race condition under load); JWT in cookie(CORS blocked by CDN)`
+- `DECIDED` — **sentence-allowed**: `{decision}: {reason}` e.g. `use polling not websocket: mobile clients drop WS connections on background`
+- Use `—` for empty fields.
 
 ## Step 6 — For each project: merge into CURRENT.ctx
 
@@ -119,12 +124,13 @@ Update `~/.claude/sessions/{project}/CURRENT.ctx` using these rules:
 | `STACK` | Union of all stacks seen (deduplicate) |
 | `DONE` | **Replace** with this session's DONE only |
 | `CHANGED` | **Replace** with this session's CHANGED only |
-| `DECIDED` | **Accumulate** — append new, keep all prior |
+| `TRIED` | **Accumulate** — keep all prior failed attempts; they must never be repeated |
+| `DECIDED` | **Accumulate** — append new decisions, keep all prior with reasoning |
 | `TODO` | Remove items that appear in DONE; add new items |
 | `OPEN` | **Accumulate** — keep prior, add new |
 | `CTX` | **Accumulate** — union, deduplicate |
 
-Keep CURRENT.ctx under ~200 tokens. Compress older entries if needed.
+Keep CURRENT.ctx under ~300 tokens (raised from 200 to accommodate TRIED and DECIDED detail). If it grows beyond that, compress DONE/CHANGED history but never compress TRIED or DECIDED — those are the most valuable for continuity.
 
 ## Step 7 — Commit and push all at once
 
