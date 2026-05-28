@@ -80,7 +80,7 @@ function installHooks() {
   };
   const stopHook = {
     type: 'command',
-    command: "curl -s -X POST -H 'Content-Type: application/json' -d @- http://127.0.0.1:3939/notify > /dev/null 2>&1 || true"
+    command: "~/.claude/scripts/dragon-notify.sh"
   };
 
   let settings = {};
