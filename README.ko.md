@@ -12,7 +12,7 @@ npx zzang-claude-skills
 
 인스톨러가 자동으로:
 - 모든 스킬을 `~/.claude/commands/`에 설치
-- `task-log.sh`를 `~/.claude/scripts/`에 설치
+- 공유 훅 스크립트를 `~/.zzang/scripts/`에 설치
 - `PostToolUse` 훅(작업 로그)을 `~/.claude/settings.json`에 등록
 - `Stop` 훅(claude-dragon 알림)을 `~/.claude/settings.json`에 등록
 - 세션 저장용 private GitHub 레포 설정을 안내
@@ -35,7 +35,7 @@ npx zzang-claude-skills
 
 Claude가 응답을 완료할 때마다 나타나는 데스크탑 마스코트.
 
-별도 Electron 앱([claude-dragon](https://github.com/Kimseungzzang/claude-dragon))으로 구성 — 투명한 항상-최상단 오버레이 창. Claude가 멈추면 `Stop` 훅이 현재 작업 디렉토리를 HTTP로 전송하고, 귀여운 용이 화면 구석에서 날아들어 불을 뿜고 프로젝트 이름이 담긴 말풍선을 보여준 후 사라집니다.
+별도 Electron 앱([claude-dragon](https://github.com/Kimseungzzang/claude-dragon))으로 구성 — 투명한 항상-최상단 오버레이 창. Claude가 멈추면 `Stop` 훅이 현재 작업 디렉토리와 컨텍스트 사용량을 트리거 파일에 기록하고, 귀여운 용이 화면 구석에서 날아들어 불을 뿜고 프로젝트 이름이 담긴 말풍선을 보여준 후 사라집니다.
 
 **설정:**
 1. 컴패니언 앱 클론 및 실행:
@@ -85,13 +85,13 @@ Claude가 응답을 완료할 때마다 나타나는 데스크탑 마스코트.
 └─────────────────────────────────────────────────────────────────┘
          │
          ▼
-[1] ~/.claude/zzang-ctx가 git 레포인가?
+[1] ~/.zzang/ctx가 git 레포인가?
          │
     NO ──┤
-         │   ~/.claude/zzang-ctx-remote가 설정되어 있나?
+         │   ~/.zzang/ctx-remote가 설정되어 있나?
          │         │
          │    YES  ▼
-         │   git clone {url} ~/.claude/zzang-ctx
+         │   git clone {url} ~/.zzang/ctx
          │         │
          │    NO   ▼
          │   사용자에게 묻기: 기존 레포 사용 or 새로 생성?
@@ -110,15 +110,15 @@ Claude가 응답을 완료할 때마다 나타나는 데스크탑 마스코트.
          ▼
 [4] 각 프로젝트별:
     │
-    ├─► ~/.claude/zzang-ctx/{project}/task-log.md 읽기  (로컬 전용)
+    ├─► ~/.zzang/ctx/{project}/task-log.md 읽기  (로컬 전용)
     │       └── DONE/CHANGED 정확히 채우기
     │       └── 마지막 라인 타임스탬프를 TASK-LOG-ID로 기록
     │
-    ├─► ~/.claude/zzang-ctx/{project}/CURRENT.ctx 읽기  (누적 히스토리)
+    ├─► ~/.zzang/ctx/{project}/CURRENT.ctx 읽기  (누적 히스토리)
     │
     ▼
 [5] 타임스탬프 스냅샷 작성
-    ~/.claude/zzang-ctx/{project}/YYYY-MM-DDTHH-MM
+    ~/.zzang/ctx/{project}/YYYY-MM-DDTHH-MM
     ┌──────────────────────────────────────────────┐
     │ SESSION  타임스탬프 | /프로젝트/경로 | 브랜치 │
     │ STACK:   언어/프레임워크/DB                   │
@@ -150,7 +150,7 @@ Claude가 응답을 완료할 때마다 나타나는 데스크탑 마스코트.
          │
          ▼
 [7] task-log 삭제  (CURRENT.ctx에 흡수 완료)
-    rm ~/.claude/zzang-ctx/{project}/task-log.md
+    rm ~/.zzang/ctx/{project}/task-log.md
          │
          ▼
 [8] git add . && git commit && git push
@@ -169,7 +169,7 @@ Claude가 응답을 완료할 때마다 나타나는 데스크탑 마스코트.
 └─────────────────────────────────────────────────────────────────┘
          │
          ▼
-[1] ~/.claude/zzang-ctx가 git 레포인가?  (save와 동일한 설정 확인)
+[1] ~/.zzang/ctx가 git 레포인가?  (save와 동일한 설정 확인)
          │
          ▼
 [2] git pull --rebase
@@ -181,7 +181,7 @@ Claude가 응답을 완료할 때마다 나타나는 데스크탑 마스코트.
          │
          ▼
 [4] CURRENT.ctx 읽기
-    cat ~/.claude/zzang-ctx/{project}/CURRENT.ctx
+    cat ~/.zzang/ctx/{project}/CURRENT.ctx
          │
          └── 파일 없으면 → "이 프로젝트의 저장된 컨텍스트 없음. /session-save를 먼저 실행하세요."
          │
@@ -232,7 +232,7 @@ Case 2: LAST_LOG > SAVED_ID            Case 3: task-log 헤더 > SESSION
 매 툴 사용 후 자동 실행. `task-log.md`에 한 줄씩 추가:
 
 ```
-~/.claude/zzang-ctx/{project}/task-log.md
+~/.zzang/ctx/{project}/task-log.md
 
 ## 2026-05-28T14:00 | my-project       ← 헤더 (세션 첫 항목에 생성)
 [14:01] Write      src/api.py
@@ -243,6 +243,7 @@ Case 2: LAST_LOG > SAVED_ID            Case 3: task-log 헤더 > SESSION
 - **로컬 전용** — GitHub에 직접 push되지 않음
 - **`/session-save`가 흡수** — CURRENT.ctx에 병합 후 삭제
 - **`/session-load`가 읽음** — TASK-LOG-ID와 비교해서 중단 지점 감지
+- **스키마 호환** — `jq` 없이 Claude Code(`tool_name`, `tool_input`)와 Codex 스타일(`tool`, `input`) 훅 payload를 모두 읽음
 - **목적** — Claude가 강제 종료되어도 (Stop 훅 불필요) 정확한 작업 기록 유지
 
 ---
@@ -250,22 +251,26 @@ Case 2: LAST_LOG > SAVED_ID            Case 3: task-log 헤더 > SESSION
 ### 저장소 레이아웃
 
 ```
-~/.claude/
-├── commands/
-│   ├── session-save.md       ← 스킬 정의
-│   └── session-load.md
-├── scripts/
-│   └── task-log.sh           ← PostToolUse 훅 스크립트
-├── settings.json             ← 훅 등록
-├── zzang-ctx-remote          ← GitHub 레포 URL 저장
-└── zzang-ctx/                ← git 레포 (GitHub에서 clone)
-    ├── .gitignore
-    ├── my-project/
-    │   ├── CURRENT.ctx       ← 누적 상태 (push됨)
-    │   ├── task-log.md       ← 실시간 로그 (로컬 전용, push 안 됨)
-    │   └── 2026-05-28T14-00  ← 타임스탬프 스냅샷 (push됨)
-    └── other-project/
-        └── CURRENT.ctx
+~/
+├── .claude/
+│   ├── commands/
+│   │   ├── session-save.md       ← 스킬 정의
+│   │   └── session-load.md
+│   └── settings.json             ← 훅 등록
+└── .zzang/
+    ├── scripts/
+    │   ├── task-log.sh           ← PostToolUse 훅 스크립트
+    │   ├── dragon-notify.sh      ← Stop 훅 스크립트
+    │   └── pre-compact-backup.sh ← PreCompact 훅 스크립트
+    ├── ctx-remote                ← GitHub 레포 URL 저장
+    └── ctx/                      ← git 레포 (GitHub에서 clone)
+        ├── .gitignore
+        ├── my-project/
+        │   ├── CURRENT.ctx       ← 누적 상태 (push됨)
+        │   ├── task-log.md       ← 실시간 로그 (로컬 전용, push 안 됨)
+        │   └── 2026-05-28T14-00  ← 타임스탬프 스냅샷 (push됨)
+        └── other-project/
+            └── CURRENT.ctx
 ```
 
 ---
@@ -290,7 +295,7 @@ Case 2: LAST_LOG > SAVED_ID            Case 3: task-log 헤더 > SESSION
 **세션 레포는 반드시 private으로.**
 CURRENT.ctx에는 파일 경로, 설계 결정, API 키 이름, 내부 아키텍처 세부사항이 담깁니다. 절대 public 레포를 사용하지 마세요.
 
-**`~/.claude/zzang-ctx/`를 수동으로 삭제하지 마세요.**
+**`~/.zzang/ctx/`를 수동으로 삭제하지 마세요.**
 `task-log.md`가 여기에 있으며 로컬 전용입니다. `/session-save` 전에 폴더를 지우면 흡수되지 않은 항목이 영구적으로 사라집니다.
 
 **CURRENT.ctx를 직접 편집하지 마세요.**

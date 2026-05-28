@@ -12,7 +12,7 @@ npx zzang-claude-skills
 
 The installer automatically:
 - Installs all skills into `~/.claude/commands/`
-- Installs `task-log.sh` into `~/.claude/scripts/`
+- Installs shared hook scripts into `~/.zzang/scripts/`
 - Registers the `PostToolUse` hook (task logging) in `~/.claude/settings.json`
 - Registers the `Stop` hook (claude-dragon notification) in `~/.claude/settings.json`
 - Guides you through setting up a private GitHub repo for session storage
@@ -35,7 +35,7 @@ The installer automatically:
 
 A desktop companion that appears every time Claude finishes a response.
 
-Built as a separate Electron app ([claude-dragon](https://github.com/Kimseungzzang/claude-dragon)) — a transparent, always-on-top overlay window. When Claude stops, the `Stop` hook sends the current working directory to the app via HTTP, and a cute dragon flies in from the corner, breathes fire, shows a speech bubble with the project name, then flies away.
+Built as a separate Electron app ([claude-dragon](https://github.com/Kimseungzzang/claude-dragon)) — a transparent, always-on-top overlay window. When Claude stops, the `Stop` hook writes the current working directory and context usage to the dragon trigger file, and a cute dragon flies in from the corner, breathes fire, shows a speech bubble with the project name, then flies away.
 
 **Setup:**
 1. Clone and run the companion app:
@@ -85,13 +85,13 @@ Every tool use  →  PostToolUse hook  →  task-log.md (local only)
 └─────────────────────────────────────────────────────────────────┘
          │
          ▼
-[1] Is ~/.claude/zzang-ctx a git repo?
+[1] Is ~/.zzang/ctx a git repo?
          │
     NO ──┤
-         │   Is ~/.claude/zzang-ctx-remote set?
+         │   Is ~/.zzang/ctx-remote set?
          │         │
          │    YES  ▼
-         │   git clone {url} ~/.claude/zzang-ctx
+         │   git clone {url} ~/.zzang/ctx
          │         │
          │    NO   ▼
          │   Ask user: existing repo or create new?
@@ -110,15 +110,15 @@ Every tool use  →  PostToolUse hook  →  task-log.md (local only)
          ▼
 [4] For each project:
     │
-    ├─► Read ~/.claude/zzang-ctx/{project}/task-log.md  (local only)
+    ├─► Read ~/.zzang/ctx/{project}/task-log.md  (local only)
     │       └── use it to accurately populate DONE/CHANGED
     │       └── record last line timestamp as TASK-LOG-ID
     │
-    ├─► Read ~/.claude/zzang-ctx/{project}/CURRENT.ctx  (accumulated history)
+    ├─► Read ~/.zzang/ctx/{project}/CURRENT.ctx  (accumulated history)
     │
     ▼
 [5] Write timestamped snapshot
-    ~/.claude/zzang-ctx/{project}/YYYY-MM-DDTHH-MM
+    ~/.zzang/ctx/{project}/YYYY-MM-DDTHH-MM
     ┌──────────────────────────────────────────────┐
     │ SESSION  timestamp | /path/to/project | branch│
     │ STACK:   lang/framework/db                    │
@@ -150,7 +150,7 @@ Every tool use  →  PostToolUse hook  →  task-log.md (local only)
          │
          ▼
 [7] Delete task-log  (it's now absorbed into CURRENT.ctx)
-    rm ~/.claude/zzang-ctx/{project}/task-log.md
+    rm ~/.zzang/ctx/{project}/task-log.md
          │
          ▼
 [8] git add . && git commit && git push
@@ -169,7 +169,7 @@ Every tool use  →  PostToolUse hook  →  task-log.md (local only)
 └─────────────────────────────────────────────────────────────────┘
          │
          ▼
-[1] Is ~/.claude/zzang-ctx a git repo?  (same setup check as save)
+[1] Is ~/.zzang/ctx a git repo?  (same setup check as save)
          │
          ▼
 [2] git pull --rebase
@@ -181,7 +181,7 @@ Every tool use  →  PostToolUse hook  →  task-log.md (local only)
          │
          ▼
 [4] Read CURRENT.ctx
-    cat ~/.claude/zzang-ctx/{project}/CURRENT.ctx
+    cat ~/.zzang/ctx/{project}/CURRENT.ctx
          │
          └── not found? → "No context saved for this project. Run /session-save first."
          │
@@ -232,7 +232,7 @@ Case 2: LAST_LOG > SAVED_ID             Case 3: task-log header > SESSION
 Runs automatically after every tool use. Appends one line to `task-log.md`:
 
 ```
-~/.claude/zzang-ctx/{project}/task-log.md
+~/.zzang/ctx/{project}/task-log.md
 
 ## 2026-05-28T14:00 | my-project       ← header (created on first entry)
 [14:01] Write      src/api.py
@@ -243,6 +243,7 @@ Runs automatically after every tool use. Appends one line to `task-log.md`:
 - **Local only** — never pushed to GitHub directly
 - **Absorbed by `/session-save`** — content is merged into CURRENT.ctx, then deleted
 - **Read by `/session-load`** — compared against `TASK-LOG-ID` to detect interrupted work
+- **Schema tolerant** — reads both Claude Code (`tool_name`, `tool_input`) and Codex-style (`tool`, `input`) hook payloads without requiring `jq`
 - **Purpose** — captures exactly what happened even if Claude is force-killed (no Stop hook needed)
 
 ---
@@ -250,22 +251,26 @@ Runs automatically after every tool use. Appends one line to `task-log.md`:
 ### Storage layout
 
 ```
-~/.claude/
-├── commands/
-│   ├── session-save.md       ← skill definitions
-│   └── session-load.md
-├── scripts/
-│   └── task-log.sh           ← PostToolUse hook script
-├── settings.json             ← hook registration
-├── zzang-ctx-remote          ← stores your GitHub repo URL
-└── zzang-ctx/                ← git repo (cloned from GitHub)
-    ├── .gitignore
-    ├── my-project/
-    │   ├── CURRENT.ctx       ← accumulated state (pushed)
-    │   ├── task-log.md       ← live log (local only, not pushed)
-    │   └── 2026-05-28T14-00  ← timestamped snapshots (pushed)
-    └── other-project/
-        └── CURRENT.ctx
+~/
+├── .claude/
+│   ├── commands/
+│   │   ├── session-save.md       ← skill definitions
+│   │   └── session-load.md
+│   └── settings.json             ← hook registration
+└── .zzang/
+    ├── scripts/
+    │   ├── task-log.sh           ← PostToolUse hook script
+    │   ├── dragon-notify.sh      ← Stop hook script
+    │   └── pre-compact-backup.sh ← PreCompact hook script
+    ├── ctx-remote                ← stores your GitHub repo URL
+    └── ctx/                      ← git repo (cloned from GitHub)
+        ├── .gitignore
+        ├── my-project/
+        │   ├── CURRENT.ctx       ← accumulated state (pushed)
+        │   ├── task-log.md       ← live log (local only, not pushed)
+        │   └── 2026-05-28T14-00  ← timestamped snapshots (pushed)
+        └── other-project/
+            └── CURRENT.ctx
 ```
 
 ---
@@ -290,7 +295,7 @@ Machine A                          Machine B
 **Keep your sessions repo private.**
 CURRENT.ctx captures file paths, decisions, API key names, and internal architecture details. Never use a public repo.
 
-**Don't delete `~/.claude/zzang-ctx/` manually.**
+**Don't delete `~/.zzang/ctx/` manually.**
 `task-log.md` lives there and is local-only. If you wipe the folder before `/session-save`, unabsorbed entries are gone permanently.
 
 **Don't edit CURRENT.ctx by hand.**
