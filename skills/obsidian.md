@@ -48,21 +48,16 @@ Update the project note using the rules below. The goal is a single file that al
 
 ### 프로젝트 구조 (Project Structure)
 
-This section is the live reference for the project. Update it every session to match the current state of the codebase.
+This section is the live reference for the project.
 
-To gather current state, read key files from the project:
+**If the section does not exist yet** — read the codebase to build it from scratch:
 ```bash
 # File tree (top-level + one level deep, excluding build artifacts)
-find {project_root} -maxdepth 2 -not -path '*/node_modules/*' -not -path '*/.git/*' \
+find {project_root} -maxdepth 2 \
+  -not -path '*/node_modules/*' -not -path '*/.git/*' \
   -not -path '*/build/*' -not -path '*/.gradle/*' -not -path '*/target/*' | sort
-
-# Recent changes as a hint
-git -C {project_root} diff HEAD --name-only 2>/dev/null
-git -C {project_root} log --oneline -5 2>/dev/null
 ```
-
-Include whichever of the following are relevant to this project (skip sections that don't apply):
-
+Then read relevant source files as needed to populate the sections below. Include whichever apply (skip the rest):
 - **개요** — 프로젝트 목적, 레포 URL
 - **서비스 구조** — 서비스/모듈 목록, 포트, 기술 스택
 - **브랜치 구조** — 브랜치별 역할
@@ -70,10 +65,7 @@ Include whichever of the following are relevant to this project (skip sections t
 - **데이터 구조** — DB 스키마, Redis 키, 주요 모델
 - **주요 플로우** — 핵심 기능의 호출 흐름
 
-**Update rules:**
-- If the section already exists: compare with current codebase state. Update changed parts in-place. Mark updated lines with `*(updated YYYY-MM-DD)*` only when the change is non-obvious.
-- If the section does not exist: create it from scratch based on what was discussed or implemented this session.
-- Do not preserve stale information. This section should always reflect today's reality.
+**If the section already exists** — do NOT re-read the file tree. Instead, derive what changed from this session's commits and discussion only. Update the affected parts in-place. Mark non-obvious changes with `*(updated YYYY-MM-DD)*`. Leave everything else untouched.
 
 ---
 
