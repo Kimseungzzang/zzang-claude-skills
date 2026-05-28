@@ -1,5 +1,10 @@
 Apply these rules when writing or reviewing Spring Boot code.
 
+## Language
+
+- All code comments must be written in Korean.
+- `api.md` must be written in Korean.
+
 ## Architecture
 
 - Enforce layer boundaries — Controller handles HTTP only, Service handles business logic only, Repository handles DB only. Never skip layers.
