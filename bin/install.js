@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const readline = require('readline');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 const SKILLS_DIR = path.join(os.homedir(), '.claude', 'commands');
 const SCRIPTS_DIR = path.join(os.homedir(), '.claude', 'scripts');
@@ -25,10 +25,21 @@ function repoExistsOnGitHub(url) {
   if (!match) return { ok: false, error: 'Could not parse GitHub URL.' };
   const slug = `${match[1]}/${match[2]}`;
   try {
-    execSync(`gh repo view ${slug} --json name`, { stdio: 'pipe' });
-    return { ok: true };
+    execFileSync('gh', ['--version'], { stdio: 'pipe' });
   } catch {
-    return { ok: false, error: `Repo not found: github.com/${slug}` };
+    return { ok: false, error: 'GitHub CLI (`gh`) is not installed or not on PATH.' };
+  }
+
+  try {
+    execFileSync('gh', ['repo', 'view', slug, '--json', 'name'], { stdio: 'pipe' });
+    return { ok: true };
+  } catch (error) {
+    const stderr = error.stderr?.toString().trim();
+    const message = stderr || error.message || '';
+    if (message.includes('not logged into') || message.includes('authentication')) {
+      return { ok: false, error: 'GitHub CLI is not authenticated. Run `gh auth login` first.' };
+    }
+    return { ok: false, error: `Repo not found or not accessible: github.com/${slug}` };
   }
 }
 
@@ -63,9 +74,13 @@ function installScripts() {
 }
 
 function installHooks() {
-  const hook = {
+  const postToolUseHook = {
     type: 'command',
     command: '~/.claude/scripts/task-log.sh'
+  };
+  const stopHook = {
+    type: 'command',
+    command: "curl -s -X POST -H 'Content-Type: application/json' -d @- http://127.0.0.1:3939/notify > /dev/null 2>&1 || true"
   };
 
   let settings = {};
@@ -75,19 +90,29 @@ function installHooks() {
 
   settings.hooks = settings.hooks || {};
   settings.hooks.PostToolUse = settings.hooks.PostToolUse || [];
+  settings.hooks.Stop = settings.hooks.Stop || [];
 
-  // Add hook if not already present
-  const already = settings.hooks.PostToolUse.some(entry =>
-    entry.hooks?.some(h => h.command === hook.command)
+  const postToolUseAlready = settings.hooks.PostToolUse.some(entry =>
+    entry.hooks?.some(h => h.command === postToolUseHook.command)
   );
-
-  if (!already) {
-    settings.hooks.PostToolUse.push({ matcher: '*', hooks: [hook] });
-    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
+  if (!postToolUseAlready) {
+    settings.hooks.PostToolUse.push({ matcher: '*', hooks: [postToolUseHook] });
     console.log('✅ installed: PostToolUse hook → task-log.sh');
   } else {
     console.log('🔄 up to date: PostToolUse hook');
   }
+
+  const stopAlready = settings.hooks.Stop.some(entry =>
+    entry.hooks?.some(h => h.command === stopHook.command)
+  );
+  if (!stopAlready) {
+    settings.hooks.Stop.push({ hooks: [stopHook] });
+    console.log('✅ installed: Stop hook → claude-dragon notify');
+  } else {
+    console.log('🔄 up to date: Stop hook');
+  }
+
+  fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
 }
 
 async function setupSessionsRepo(rl) {

@@ -13,7 +13,8 @@ npx zzang-claude-skills
 The installer automatically:
 - Installs all skills into `~/.claude/commands/`
 - Installs `task-log.sh` into `~/.claude/scripts/`
-- Registers the `PostToolUse` hook in `~/.claude/settings.json`
+- Registers the `PostToolUse` hook (task logging) in `~/.claude/settings.json`
+- Registers the `Stop` hook (claude-dragon notification) in `~/.claude/settings.json`
 - Guides you through setting up a private GitHub repo for session storage
 
 **Restart Claude Code after install to activate hooks.**
@@ -27,6 +28,24 @@ The installer automatically:
 | `/obsidian` | Summarize today's conversation and save it to your Obsidian vault |
 | `/github-summary` | Fetch a GitHub repo URL and summarize it |
 | `/codex-review-loop` | Run Codex CLI review, fix issues, repeat until clean (max 3 iterations) |
+
+---
+
+## Claude Dragon
+
+A desktop companion that appears every time Claude finishes a response.
+
+Built as a separate Electron app ([claude-dragon](https://github.com/Kimseungzzang/claude-dragon)) — a transparent, always-on-top overlay window. When Claude stops, the `Stop` hook sends the current working directory to the app via HTTP, and a cute dragon flies in from the corner, breathes fire, shows a speech bubble with the project name, then flies away.
+
+**Setup:**
+1. Clone and run the companion app:
+   ```bash
+   git clone https://github.com/Kimseungzzang/claude-dragon.git
+   cd claude-dragon && npm install && npm start
+   ```
+2. The `Stop` hook is automatically registered by the installer — no extra config needed.
+
+The dragon runs in the background. As long as it's running, it will respond to every Claude session on your machine.
 
 ---
 

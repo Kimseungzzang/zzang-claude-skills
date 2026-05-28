@@ -13,7 +13,8 @@ npx zzang-claude-skills
 인스톨러가 자동으로:
 - 모든 스킬을 `~/.claude/commands/`에 설치
 - `task-log.sh`를 `~/.claude/scripts/`에 설치
-- `PostToolUse` 훅을 `~/.claude/settings.json`에 등록
+- `PostToolUse` 훅(작업 로그)을 `~/.claude/settings.json`에 등록
+- `Stop` 훅(claude-dragon 알림)을 `~/.claude/settings.json`에 등록
 - 세션 저장용 private GitHub 레포 설정을 안내
 
 **설치 후 Claude Code를 재시작해야 훅이 활성화됩니다.**
@@ -27,6 +28,24 @@ npx zzang-claude-skills
 | `/obsidian` | 오늘 대화를 요약해서 Obsidian vault에 저장 |
 | `/github-summary` | GitHub 레포 URL을 가져와서 요약 |
 | `/codex-review-loop` | Codex CLI 코드 리뷰 → 수정 → 클린할 때까지 반복 (최대 3회) |
+
+---
+
+## Claude Dragon
+
+Claude가 응답을 완료할 때마다 나타나는 데스크탑 마스코트.
+
+별도 Electron 앱([claude-dragon](https://github.com/Kimseungzzang/claude-dragon))으로 구성 — 투명한 항상-최상단 오버레이 창. Claude가 멈추면 `Stop` 훅이 현재 작업 디렉토리를 HTTP로 전송하고, 귀여운 용이 화면 구석에서 날아들어 불을 뿜고 프로젝트 이름이 담긴 말풍선을 보여준 후 사라집니다.
+
+**설정:**
+1. 컴패니언 앱 클론 및 실행:
+   ```bash
+   git clone https://github.com/Kimseungzzang/claude-dragon.git
+   cd claude-dragon && npm install && npm start
+   ```
+2. `Stop` 훅은 인스톨러가 자동 등록 — 별도 설정 불필요.
+
+용은 백그라운드에서 실행됩니다. 실행 중인 동안 해당 머신의 모든 Claude 세션에 반응합니다.
 
 ---
 
