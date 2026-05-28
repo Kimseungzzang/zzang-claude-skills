@@ -82,6 +82,10 @@ function installHooks() {
     type: 'command',
     command: "~/.claude/scripts/dragon-notify.sh"
   };
+  const preCompactHook = {
+    type: 'command',
+    command: '~/.claude/scripts/pre-compact-backup.sh'
+  };
 
   let settings = {};
   if (fs.existsSync(SETTINGS_FILE)) {
@@ -91,6 +95,7 @@ function installHooks() {
   settings.hooks = settings.hooks || {};
   settings.hooks.PostToolUse = settings.hooks.PostToolUse || [];
   settings.hooks.Stop = settings.hooks.Stop || [];
+  settings.hooks.PreCompact = settings.hooks.PreCompact || [];
 
   const postToolUseAlready = settings.hooks.PostToolUse.some(entry =>
     entry.hooks?.some(h => h.command === postToolUseHook.command)
@@ -110,6 +115,16 @@ function installHooks() {
     console.log('✅ installed: Stop hook → claude-dragon notify');
   } else {
     console.log('🔄 up to date: Stop hook');
+  }
+
+  const preCompactAlready = settings.hooks.PreCompact.some(entry =>
+    entry.hooks?.some(h => h.command === preCompactHook.command)
+  );
+  if (!preCompactAlready) {
+    settings.hooks.PreCompact.push({ hooks: [preCompactHook] });
+    console.log('✅ installed: PreCompact hook → pre-compact-backup.sh');
+  } else {
+    console.log('🔄 up to date: PreCompact hook');
   }
 
   fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
