@@ -15,7 +15,7 @@ case "$TOOL" in
 esac
 
 PROJECT=$(git rev-parse --show-toplevel 2>/dev/null | xargs basename 2>/dev/null || basename "$PWD")
-LOG="$HOME/.claude/zzang-ctx/$PROJECT/task-log.md"
+LOG="$HOME/.zzang/ctx/$PROJECT/task-log.md"
 
 if [ ! -f "$LOG" ]; then
   mkdir -p "$(dirname "$LOG")"

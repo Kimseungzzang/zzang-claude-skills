@@ -2,10 +2,10 @@ Compact the current conversation context and save per-project filtered snapshots
 
 ## Step 1 — Ensure sessions repo is set up
 
-Check if ~/.claude/zzang-ctx is already a git repo:
+Check if ~/.zzang/ctx is already a git repo:
 
 ```bash
-git -C ~/.claude/zzang-ctx rev-parse --git-dir 2>/dev/null
+git -C ~/.zzang/ctx rev-parse --git-dir 2>/dev/null
 ```
 
 **If it IS a git repo** → proceed to Step 2.
@@ -13,12 +13,12 @@ git -C ~/.claude/zzang-ctx rev-parse --git-dir 2>/dev/null
 **If it is NOT a git repo**, check for a saved remote URL:
 
 ```bash
-cat ~/.claude/zzang-ctx-remote 2>/dev/null
+cat ~/.zzang/ctx-remote 2>/dev/null
 ```
 
 - **URL found** → clone it:
   ```bash
-  git clone {saved_url} ~/.claude/zzang-ctx
+  git clone {saved_url} ~/.zzang/ctx
   ```
 
 - **No URL found** → ask the user:
@@ -33,21 +33,21 @@ cat ~/.claude/zzang-ctx-remote 2>/dev/null
 
   If option 1: clone the provided URL, then save it:
   ```bash
-  git clone {url} ~/.claude/zzang-ctx
-  echo "{url}" > ~/.claude/zzang-ctx-remote
+  git clone {url} ~/.zzang/ctx
+  echo "{url}" > ~/.zzang/ctx-remote
   ```
 
   If option 2: guide the user to run:
   ```bash
   gh repo create claude-sessions --private
-  git clone https://github.com/{username}/claude-sessions.git ~/.claude/zzang-ctx
-  echo "https://github.com/{username}/claude-sessions.git" > ~/.claude/zzang-ctx-remote
+  git clone https://github.com/{username}/claude-sessions.git ~/.zzang/ctx
+  echo "https://github.com/{username}/claude-sessions.git" > ~/.zzang/ctx-remote
   ```
 
 ## Step 2 — Pull latest
 
 ```bash
-git -C ~/.claude/zzang-ctx pull --rebase 2>/dev/null || true
+git -C ~/.zzang/ctx pull --rebase 2>/dev/null || true
 ```
 
 ## Step 3 — Detect projects worked on this session
@@ -85,7 +85,7 @@ Proceed with the confirmed project list.
 Read task-log first (local only — contains every tool use since last session start):
 
 ```bash
-cat ~/.claude/zzang-ctx/{project}/task-log.md 2>/dev/null
+cat ~/.zzang/ctx/{project}/task-log.md 2>/dev/null
 ```
 
 Use task-log to accurately populate DONE and CHANGED fields in the snapshot. This ensures cross-machine accuracy — task-log is local only and will not exist on other machines, so its contents must be absorbed into CURRENT.ctx now.
@@ -95,12 +95,12 @@ Record the timestamp of the **last line** of task-log as `TASK-LOG-ID` in CURREN
 Then read existing CURRENT.ctx to load accumulated history:
 
 ```bash
-cat ~/.claude/zzang-ctx/{project}/CURRENT.ctx 2>/dev/null
+cat ~/.zzang/ctx/{project}/CURRENT.ctx 2>/dev/null
 ```
 
 ## Step 5 — For each project: write a filtered snapshot
 
-File: `~/.claude/zzang-ctx/{project}/$(date '+%Y-%m-%dT%H-%M')`
+File: `~/.zzang/ctx/{project}/$(date '+%Y-%m-%dT%H-%M')`
 
 **Critical rule**: each project's snapshot must contain ONLY information relevant to that project. Do not bleed context from other projects into this file.
 
@@ -126,7 +126,7 @@ Field formatting rules:
 
 ## Step 6 — For each project: merge into CURRENT.ctx
 
-Update `~/.claude/zzang-ctx/{project}/CURRENT.ctx` using these rules:
+Update `~/.zzang/ctx/{project}/CURRENT.ctx` using these rules:
 
 | Field | Rule |
 |-------|------|
@@ -148,15 +148,15 @@ Keep CURRENT.ctx under ~300 tokens (raised from 200 to accommodate TRIED and DEC
 After absorbing task-log into CURRENT.ctx, delete it. Next task will start a fresh log.
 
 ```bash
-rm ~/.claude/zzang-ctx/{project}/task-log.md 2>/dev/null || true
+rm ~/.zzang/ctx/{project}/task-log.md 2>/dev/null || true
 ```
 
 ## Step 8 — Commit and push
 
 ```bash
-git -C ~/.claude/zzang-ctx add .
-git -C ~/.claude/zzang-ctx commit -m "session: {project-list} $(date '+%Y-%m-%dT%H:%M')"
-git -C ~/.claude/zzang-ctx push
+git -C ~/.zzang/ctx add .
+git -C ~/.zzang/ctx commit -m "session: {project-list} $(date '+%Y-%m-%dT%H:%M')"
+git -C ~/.zzang/ctx push
 ```
 
 ## Step 9 — Report
@@ -164,8 +164,8 @@ git -C ~/.claude/zzang-ctx push
 ```
 ✅ Session saved for {N} project(s):
 
-  • {project-a} → ~/.claude/zzang-ctx/project-a/{timestamp}
-  • {project-b} → ~/.claude/zzang-ctx/project-b/{timestamp}
+  • {project-a} → ~/.zzang/ctx/project-a/{timestamp}
+  • {project-b} → ~/.zzang/ctx/project-b/{timestamp}
 
 📋 CURRENT.ctx updated for each.
 📤 Pushed to remote.

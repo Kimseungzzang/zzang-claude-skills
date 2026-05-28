@@ -26,7 +26,7 @@ try:
 except:
     project = os.path.basename(cwd)
 
-ctx_dir = os.path.expanduser(f'~/.claude/zzang-ctx/{project}')
+ctx_dir = os.path.expanduser(f'~/.zzang/ctx/{project}')
 task_log_path = os.path.join(ctx_dir, 'task-log.md')
 current_ctx_path = os.path.join(ctx_dir, 'CURRENT.ctx')
 
@@ -75,7 +75,7 @@ with open(current_ctx_path, 'w') as f:
     f.write(current_ctx)
 
 # git commit (push 없음 — 속도 우선)
-zzang_ctx = os.path.expanduser('~/.claude/zzang-ctx')
+zzang_ctx = os.path.expanduser('~/.zzang/ctx')
 subprocess.run(['git', '-C', zzang_ctx, 'add', current_ctx_path], capture_output=True)
 subprocess.run([
     'git', '-C', zzang_ctx, 'commit', '-m',

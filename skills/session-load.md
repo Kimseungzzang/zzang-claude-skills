@@ -2,10 +2,10 @@ Restore accumulated project context from CURRENT.ctx for the current project.
 
 ## Step 1 — Ensure sessions repo is set up
 
-Check if ~/.claude/zzang-ctx is already a git repo:
+Check if ~/.zzang/ctx is already a git repo:
 
 ```bash
-git -C ~/.claude/zzang-ctx rev-parse --git-dir 2>/dev/null
+git -C ~/.zzang/ctx rev-parse --git-dir 2>/dev/null
 ```
 
 **If it IS a git repo** → proceed to Step 2.
@@ -13,12 +13,12 @@ git -C ~/.claude/zzang-ctx rev-parse --git-dir 2>/dev/null
 **If it is NOT a git repo**, check for a saved remote URL:
 
 ```bash
-cat ~/.claude/zzang-ctx-remote 2>/dev/null
+cat ~/.zzang/ctx-remote 2>/dev/null
 ```
 
 - **URL found** → clone it:
   ```bash
-  git clone {saved_url} ~/.claude/zzang-ctx
+  git clone {saved_url} ~/.zzang/ctx
   ```
 
 - **No URL found** → ask the user:
@@ -33,22 +33,22 @@ cat ~/.claude/zzang-ctx-remote 2>/dev/null
 
   If option 1: clone the provided URL, then save it:
   ```bash
-  git clone {url} ~/.claude/zzang-ctx
-  echo "{url}" > ~/.claude/zzang-ctx-remote
+  git clone {url} ~/.zzang/ctx
+  echo "{url}" > ~/.zzang/ctx-remote
   ```
 
   If option 2: guide the user to run:
   ```bash
   gh repo create claude-sessions --private
-  git clone https://github.com/{username}/claude-sessions.git ~/.claude/zzang-ctx
-  echo "https://github.com/{username}/claude-sessions.git" > ~/.claude/zzang-ctx-remote
+  git clone https://github.com/{username}/claude-sessions.git ~/.zzang/ctx
+  echo "https://github.com/{username}/claude-sessions.git" > ~/.zzang/ctx-remote
   ```
   Then proceed once done.
 
 ## Step 2 — Pull latest
 
 ```bash
-git -C ~/.claude/zzang-ctx pull --rebase 2>/dev/null || true
+git -C ~/.zzang/ctx pull --rebase 2>/dev/null || true
 ```
 
 Note: pull fetches what was last pushed by `/session-save`. CURRENT.ctx will be up to date. task-log on GitHub may be behind — Step 4 reads the local file directly, which includes all unpushed commits from PostToolUse hooks and is always more current.
@@ -64,7 +64,7 @@ git rev-parse --show-toplevel 2>/dev/null | xargs basename
 If NOT in a git repo, use `basename "$PWD"` and warn the user.
 
 ```bash
-cat ~/.claude/zzang-ctx/$PROJECT/CURRENT.ctx 2>/dev/null
+cat ~/.zzang/ctx/$PROJECT/CURRENT.ctx 2>/dev/null
 ```
 
 If file does not exist:
@@ -78,10 +78,10 @@ Stop here.
 
 ```bash
 # Timestamp of last absorbed entry (stored in CURRENT.ctx)
-SAVED_ID=$(grep "^TASK-LOG-ID:" ~/.claude/zzang-ctx/$PROJECT/CURRENT.ctx | awk '{print $2}')
+SAVED_ID=$(grep "^TASK-LOG-ID:" ~/.zzang/ctx/$PROJECT/CURRENT.ctx | awk '{print $2}')
 
 # Timestamp of last line in local task-log
-LAST_LOG=$(tail -1 ~/.claude/zzang-ctx/$PROJECT/task-log.md 2>/dev/null | grep -o '^\[[0-9:]*\]' | tr -d '[]')
+LAST_LOG=$(tail -1 ~/.zzang/ctx/$PROJECT/task-log.md 2>/dev/null | grep -o '^\[[0-9:]*\]' | tr -d '[]')
 ```
 
 **Case 1 — last line matches SAVED_ID**: nothing new since last save. No interrupted work. Proceed normally.
@@ -146,7 +146,7 @@ Keep total output under 150 words.
 If the user passes `list` as an argument (e.g. `/session-load list`), show all saved snapshots instead of loading:
 
 ```bash
-ls -lt ~/.claude/zzang-ctx/$PROJECT/ | grep -v CURRENT
+ls -lt ~/.zzang/ctx/$PROJECT/ | grep -v CURRENT
 ```
 
 Output as a numbered list. The user can then ask to load a specific snapshot for a past context.

@@ -7,11 +7,11 @@ const readline = require('readline');
 const { execFileSync } = require('child_process');
 
 const SKILLS_DIR = path.join(os.homedir(), '.claude', 'commands');
-const SCRIPTS_DIR = path.join(os.homedir(), '.claude', 'scripts');
+const SCRIPTS_DIR = path.join(os.homedir(), '.zzang', 'scripts');
 const SETTINGS_FILE = path.join(os.homedir(), '.claude', 'settings.json');
 const SOURCE_DIR = path.join(__dirname, '..', 'skills');
 const SCRIPTS_SOURCE_DIR = path.join(__dirname, '..', 'scripts');
-const SESSIONS_REMOTE_FILE = path.join(os.homedir(), '.claude', 'zzang-ctx-remote');
+const SESSIONS_REMOTE_FILE = path.join(os.homedir(), '.zzang', 'ctx-remote');
 
 fs.mkdirSync(SKILLS_DIR, { recursive: true });
 fs.mkdirSync(SCRIPTS_DIR, { recursive: true });
@@ -76,15 +76,15 @@ function installScripts() {
 function installHooks() {
   const postToolUseHook = {
     type: 'command',
-    command: '~/.claude/scripts/task-log.sh'
+    command: '~/.zzang/scripts/task-log.sh'
   };
   const stopHook = {
     type: 'command',
-    command: "~/.claude/scripts/dragon-notify.sh"
+    command: "~/.zzang/scripts/dragon-notify.sh"
   };
   const preCompactHook = {
     type: 'command',
-    command: '~/.claude/scripts/pre-compact-backup.sh'
+    command: '~/.zzang/scripts/pre-compact-backup.sh'
   };
 
   let settings = {};
