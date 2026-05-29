@@ -6,8 +6,23 @@ Summarize today's conversation and save it to Obsidian vault.
 
 Find the vault path:
 ```bash
-find ~ -maxdepth 4 -type d -name "obsidian-vault" 2>/dev/null | head -1
+vault=""
+for candidate in "$HOME/development-personal/obsidian-vault" "$HOME/development/obsidian-vault"; do
+  [ -d "$candidate" ] && vault="$candidate" && break
+done
+
+if [ -z "$vault" ]; then
+  vault=$(find "$HOME" -maxdepth 5 -type d -name "obsidian-vault" \
+    -not -path "$HOME/.zzang/ctx/*" \
+    -not -path "$HOME/.claude/zzang-ctx/*" \
+    -not -path "$HOME/.codex/*" \
+    2>/dev/null | sort | head -1)
+fi
+
+printf '%s\n' "$vault"
 ```
+
+Never use `~/.zzang/ctx/obsidian-vault` or `~/.claude/zzang-ctx/obsidian-vault` as the vault. Those paths are session-context storage, not the user's Obsidian vault.
 
 Read today's existing daily note if it exists:
 ```bash
