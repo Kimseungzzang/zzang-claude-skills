@@ -29,7 +29,14 @@ Read today's existing daily note if it exists:
 cat {vault}/Daily/YYYY-MM-DD.md 2>/dev/null
 ```
 
-Append only **genuine questions** from the user. A genuine question is one where the user is asking for an explanation, opinion, or information. Skip simple commands or instructions (e.g., "커밋해줘", "파일 만들어줘", "스킬 추가해줘", "푸쉬해줘").
+Append only **genuine questions** from the user. A genuine question is one where the user is asking for an explanation, opinion, or information that remains useful as lasting knowledge.
+
+Skip the following even if written as a question:
+- Simple commands/instructions (e.g., "커밋해줘", "파일 만들어줘", "스킬 추가해줘", "푸쉬해줘")
+- Short operational prompts or work-order prompts (e.g., "이거 해야 하지 않냐", "이제 뭐 해야 되지", "다음 뭐 하지")
+- Session-local execution decisions that do not add durable technical insight
+
+Include only questions whose Q/A is still meaningful later without today’s execution context.
 
 For each qualifying topic, append:
 
