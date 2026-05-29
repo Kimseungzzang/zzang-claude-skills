@@ -86,6 +86,10 @@ function installHooks() {
     type: 'command',
     command: '~/.zzang/scripts/pre-compact-backup.sh'
   };
+  const preToolUseHook = {
+    type: 'command',
+    command: '~/.zzang/scripts/git-conventions-check.sh'
+  };
 
   let settings = {};
   if (fs.existsSync(SETTINGS_FILE)) {
@@ -93,9 +97,20 @@ function installHooks() {
   }
 
   settings.hooks = settings.hooks || {};
+  settings.hooks.PreToolUse = settings.hooks.PreToolUse || [];
   settings.hooks.PostToolUse = settings.hooks.PostToolUse || [];
   settings.hooks.Stop = settings.hooks.Stop || [];
   settings.hooks.PreCompact = settings.hooks.PreCompact || [];
+
+  const preToolUseAlready = settings.hooks.PreToolUse.some(entry =>
+    entry.hooks?.some(h => h.command === preToolUseHook.command)
+  );
+  if (!preToolUseAlready) {
+    settings.hooks.PreToolUse.push({ matcher: 'Bash', hooks: [preToolUseHook] });
+    console.log('✅ installed: PreToolUse hook → git-conventions-check.sh');
+  } else {
+    console.log('🔄 up to date: PreToolUse hook');
+  }
 
   const postToolUseAlready = settings.hooks.PostToolUse.some(entry =>
     entry.hooks?.some(h => h.command === postToolUseHook.command)
